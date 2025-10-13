@@ -1,0 +1,16 @@
+# Ignore inspiration references
+notes/inspiration/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+.Spotlight-V100
+.Trashes
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
