@@ -2,7 +2,7 @@
 
 ## Core Philosophy
 
-We will implement a **multimodal database structure built over Redis** that can be exported to relational (Postgres), vector (Pinecone), or graph (Neo4j) standards for their respective operations. This approach enables flexible data representation while maintaining a single source of truth.
+We will implement a **multimodal database structure** that can be exported to relational (Postgres), vector (Pinecone), or graph (Neo4j) standards for their respective operations. This approach enables flexible data representation while maintaining a single source of truth through Snowflake as the unified platform.
 
 ---
 
@@ -137,10 +137,10 @@ We evaluated multiple architectural approaches:
   - Will use **SQLModel** (Pydantic + SQLAlchemy) for their benefits
 
 ### Database Targets
-- **Relational**: PostgreSQL (via Snowflake)
+- **Platform**: Snowflake (unified data platform)
+- **Relational**: PostgreSQL export format
 - **Vector**: Pinecone
 - **Graph**: Neo4j
-- **Cache/Intermediate**: Redis
 
 ---
 
@@ -232,18 +232,20 @@ We evaluated multiple architectural approaches:
              │                                 │
              ▼                                 ▼
 ┌────────────────────────┐      ┌────────────────────────────┐
-│   Redis (Intermediate) │      │   Agentic Retrieval System  │
-│  - Multimodal Schema   │      │  - Vector Search            │
-│  - Cache Layer         │      │  - Graph Traversal          │
-└────────┬───────────────┘      │  - Relational Queries       │
-         │                      └────────────────────────────┘
+│  Snowflake Platform    │      │   Agentic Retrieval System  │
+│  - Base Relational DB  │      │  - Vector Search            │
+│  - Multimodal Schema   │      │  - Graph Traversal          │
+│  - SQLModel Layer      │      │  - Relational Queries       │
+└────────┬───────────────┘      └────────────────────────────┘
+         │
+         │ Export Scripts
          │
          ├─────────────┬─────────────┬──────────────┐
          ▼             ▼             ▼              ▼
-┌────────────┐  ┌──────────┐  ┌───────────┐  ┌──────────┐
-│ PostgreSQL │  │  Neo4j   │  │ Pinecone  │  │  Redis   │
-│(Relational)│  │ (Graph)  │  │ (Vector)  │  │ (Cache)  │
-└────────────┘  └──────────┘  └───────────┘  └──────────┘
+┌────────────┐  ┌──────────┐  ┌───────────┐
+│ PostgreSQL │  │  Neo4j   │  │ Pinecone  │
+│ (Export)   │  │ (Export) │  │ (Export)  │
+└────────────┘  └──────────┘  └───────────┘
 ```
 
 ---
@@ -252,7 +254,7 @@ We evaluated multiple architectural approaches:
 
 ### Phase 1: Core Data Model (Week 1)
 - Define Schema, Entity, and Edge models
-- Implement Redis-based storage
+- Implement Snowflake-based storage with SQLModel
 - Build validation layer
 
 ### Phase 2: Database Exporters (Week 1-2)
