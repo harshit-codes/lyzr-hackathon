@@ -274,6 +274,51 @@ We evaluated multiple architectural approaches:
 
 ---
 
+## Development Strategy
+
+### Iterative Prototyping Approach
+
+**Strategy**: Build end-to-end stack first in Python notebook, then refactor into production modules.
+
+#### Phase 0: Rapid Prototyping (Before Production Implementation)
+1. **Notebook-First Development**:
+   - Build complete end-to-end functionality in Jupyter/Python notebook
+   - Test all components in notebook environment:
+     - Data model definitions
+     - Schema creation and versioning
+     - Document processing pipeline
+     - Database operations (Snowflake)
+     - Export scripts (Neo4j, Pinecone)
+     - Retrieval system logic
+   - Validate architecture decisions quickly
+   - Host notebook directly in Streamlit using `st.notebook()` or similar
+
+2. **Benefits of Notebook-First Approach**:
+   - Rapid iteration and experimentation
+   - Easy debugging and visualization
+   - Quick validation of architecture choices
+   - Immediate feedback on data flow
+   - Lower refactoring cost if design changes needed
+
+3. **Transition to Production**:
+   - Once notebook implementation is validated and working
+   - Refactor notebook code into:
+     - Python modules (`.py` files)
+     - Proper classes and functions
+     - Organized file structure in `/code` directory
+   - Maintain clean architecture principles
+   - Add proper error handling and logging
+   - Implement comprehensive tests
+
+**Rationale**: This approach allows us to:
+- Validate the multimodal architecture concept quickly
+- Test Snowflake integration patterns
+- Experiment with export scripts
+- Refine retrieval orchestration logic
+- All before committing to final code structure
+
+---
+
 ## Implementation Phases
 
 ### Phase 1: Core Data Model Architecture (Days 1-3)
