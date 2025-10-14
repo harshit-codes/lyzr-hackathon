@@ -730,39 +730,40 @@ if __name__ == "__main__":
 
 ---
 
-## Timeline: Hackathon Sprint
+## Implementation Checklist
 
-**Total Duration**: 5 days (10th-16th October 2025)
-
-### Day 1 (Oct 10-11): SuperScan
+### SuperScan Implementation
 - [ ] PDF parsing and upload
 - [ ] Fast scan LLM integration
 - [ ] Schema proposal generation
 - [ ] User feedback loop UI
+- [ ] Schema finalization and storage
 
-### Day 2-3 (Oct 11-13): SuperKB
+### SuperKB Implementation
 - [ ] Deep scan with chunking
 - [ ] Entity extraction and resolution
 - [ ] Embedding generation
 - [ ] PostgreSQL exporter
 - [ ] Neo4j exporter
 - [ ] Pinecone exporter
+- [ ] Multi-DB sync orchestration
 
-### Day 4 (Oct 13-14): SuperChat
+### SuperChat Implementation
 - [ ] Query analysis LLM integration
 - [ ] Relational tool (SQL generation)
 - [ ] Graph tool (Cypher generation)
 - [ ] Semantic tool (vector search)
 - [ ] Context management
 - [ ] Response generation with citations
+- [ ] Chat-space management
 
-### Day 5 (Oct 14-15): Streamlit Demo
+### Streamlit Demo
 - [ ] UI implementation
 - [ ] Workflow integration
 - [ ] Demo walkthrough
 - [ ] Documentation and video
 
-### Day 6 (Oct 15-16): Polish & Submit
+### Final Polish
 - [ ] Testing and bug fixes
 - [ ] Performance optimization
 - [ ] Demo video recording
@@ -925,6 +926,6 @@ This roadmap transforms our Phase 1 foundation into a **complete Agentic Graph R
 
 **Future enhancements** will expand document coverage, improve schema management, optimize chunking algorithms, add data types, and enhance performance for specialized use cases.
 
-**Hackathon Timeline**: 5 days | **Team Focus**: Notebook workflow → Streamlit demo | **Evaluation**: System architecture, graph quality, retrieval intelligence
+**Implementation Focus**: Notebook workflow → Streamlit demo | **Evaluation**: System architecture, graph quality, retrieval intelligence
 
 Let's build it! 🚀
