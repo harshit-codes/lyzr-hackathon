@@ -14,6 +14,10 @@ Defines the structure and metadata for nodes and edges in the system.
 
 #### Schema Components:
 - **Schema_Name**: Identifier for the schema (used for nodes or edges)
+- **Schema_Version**: Version number for schema evolution and tracking
+  - Enables schema updates without breaking existing data
+  - Supports backward compatibility
+  - Allows users to upgrade schemas incrementally
 - **Type**: Node or Edge
 - **Structured_Data**: Attributes with defined types
   - In relational DB → Converted to columns
@@ -30,6 +34,7 @@ Defines the structure and metadata for nodes and edges in the system.
 - **Vector**: Embedding specifications
   - `Dimension`: Vector size
   - `Precision`: Numerical precision
+  - **Note**: Vectorization embeds the **complete content** of the data entity (structured + unstructured data combined)
 
 ### 2. Data Entity (Node)
 
@@ -39,8 +44,8 @@ Represents actual data instances conforming to defined schemas.
 - **Entity_Name**: 
   - In relational DB → Converted to primary key of the table
   - In document DB → Label of the node
-- **Data_Schema**: Foreign key reference to the schema collection
-- **Structured_Data**: Key-value pairs strictly matched with node_schema definition
+- **Data_Schema**: Foreign key reference to the schema collection (includes Schema_Version)
+- **Structured_Data**: Key-value pairs strictly matched with schema definition
   - `Attribute_Key`
   - `Attribute_Value`
   - Converted to:
@@ -49,17 +54,22 @@ Represents actual data instances conforming to defined schemas.
 - **Unstructured_Data**: List of text content
   - `Blob`: Text content
   - `Chunk_Reference`: Reference to document chunks
-- **Vector**: Embedding array as defined by Node_Schema
+- **Vector**: Embedding array as defined by Schema
+  - **Embedding Strategy**: Vector embeds the **complete content** of the entity
+  - Combines all structured attributes + all unstructured blobs
+  - Provides holistic semantic representation of the entire entity
 
 ### 3. Edge (Relations)
 
 Defines relationships between entities, enabling translation from relational joins to graph relations.
 
+**Note**: Edge structure is **nearly identical to Node structure**, except for the addition of Start_Node_Reference and End_Node_Reference.
+
 #### Edge Components:
 - **Edge_Name**:
   - In relational DB → Primary key of the relationship table
   - In document DB → Label of the edge
-- **Edge_Schema**: Foreign key reference to the edge schema collection
+- **Edge_Schema**: Foreign key reference to the edge schema collection (includes Schema_Version)
 - **Start_Node_Reference**: Entity_Name of the origin node
 - **End_Node_Reference**: Entity_Name of the destination node
 - **Structured_Data**: Key-value pairs for relationship properties
@@ -68,7 +78,11 @@ Defines relationships between entities, enabling translation from relational joi
   - Strictly matched with edge_schema definition
 - **Unstructured_Data**: List of text blobs associated with the relationship
   - `Blob`: Text content
-- **Vector**: Numerical precision array as defined by Edge_Schema
+  - `Chunk_Reference`: Reference to document chunks
+- **Vector**: Embedding array as defined by Edge_Schema
+  - **Embedding Strategy**: Vector embeds the **complete content** of the edge
+  - Combines all structured attributes + all unstructured blobs
+  - Provides holistic semantic representation of the entire relationship
 
 ---
 
@@ -162,8 +176,18 @@ We evaluated multiple architectural approaches:
    - Nodes and edges are defined
    - Labels are assigned
    - Intensity of reasoning embeds is determined
+   - **Schema version assigned** (e.g., v1.0)
 3. **User Feedback**: Schema shown to users for validation and refinement
 4. **Outcome**: Final data model prepared based on user feedback
+
+**Schema Evolution Support**:
+- Users can update schemas by creating new schema versions
+- New schema version can modify:
+  - Add/remove structured attributes
+  - Change vector dimensions
+  - Update validation rules
+- Existing data remains linked to original schema version
+- Migration tools can upgrade data to new schema versions
 
 ### Step 3: Data Extraction & Database Population
 **System Action**: Populate multimodal databases
@@ -252,30 +276,95 @@ We evaluated multiple architectural approaches:
 
 ## Implementation Phases
 
-### Phase 1: Core Data Model (Week 1)
-- Define Schema, Entity, and Edge models
-- Implement Snowflake-based storage with SQLModel
-- Build validation layer
+### Phase 1: Core Data Model Architecture (Days 1-3)
+**Focus**: Foundation inspired by Apache AGE architecture
 
-### Phase 2: Database Exporters (Week 1-2)
-- PostgreSQL exporter with SQLModel
-- Neo4j exporter with Cypher generation
-- Pinecone exporter with vector operations
+**Deliverables**:
+- Define Schema entity model with versioning support
+- Define Node entity model with complete content vectorization
+- Define Edge entity model (nearly identical to Node + Start/End references)
+- Implement SQLModel classes for all entities
+- Build schema validation layer
+- **Project Creation System**:
+  - Allow users to create projects
+  - Enable users to define custom node schemas
+  - Enable users to define custom edge schemas
+  - Schema version tracking and management
+- **Inspiration**: Draw heavily from Apache AGE's graph-on-relational approach
 
-### Phase 3: Document Processing Pipeline (Week 2)
-- PDF parsing and chunking
+**Key Features**:
+- Schema versioning for evolution support
+- Unified entity structure (Node/Edge similarity)
+- Complete content vectorization strategy
+
+### Phase 2: Snowflake Implementation & Export Testing (Days 3-5)
+**Focus**: Multimodal database implementation and validation
+
+**Deliverables**:
+- Implement core architecture in Snowflake
+- Test custom schema-based multimodal relational database creation
+- Build export scripts for:
+  - PostgreSQL format export
+  - Neo4j graph export (Cypher generation)
+  - Pinecone vector export
+- Validate referential integrity across all formats
+- Test schema versioning and migration
+
+**Key Features**:
+- Snowflake as unified platform
+- Seamless export to specialized databases
+- Schema version compatibility testing
+
+### Phase 3: Document Processing Pipeline (Days 5-7)
+**Focus**: End-to-end data ingestion workflow
+
+**Deliverables**:
+- PDF upload and parsing system
+- Document chunking engine
 - LLM-based schema generation
-- User feedback loop implementation
+  - Entity identification
+  - Node/Edge schema proposals
+  - Schema versioning
+- User feedback loop for schema refinement
+- Data extraction from documents
+- Dataset creation in custom multimodal database
+- Complete content vectorization
+  - Combine structured + unstructured data
+  - Generate embeddings for all entities
 
-### Phase 4: Retrieval System (Week 2)
-- Agentic query router
+**Key Features**:
+- Schema proposal and refinement workflow
+- Automated data extraction
+- Holistic entity vectorization
+
+### Phase 4: Retrieval System & Streamlit UI Enhancement (Days 7-9)
+**Focus**: Intelligent query interface with transparency
+
+**Deliverables**:
+- **Retrieval System Orchestrator**:
+  - Dynamic query analysis
+  - Intelligent tool selection
+  - Relational SQL command generation
+  - Cypher query generation for graph traversal
+  - Semantic reasoning with vector search
+- **Streamlit UI Enhancement**:
+  - Project management interface
+  - Schema design and versioning UI
+  - Document upload interface
+  - Natural language query interface
+  - **Transparency Layer**:
+    - Display reasoning steps
+    - Show tool selection logic
+    - Stream logical steps in real-time
+    - Provide citations for all answers
 - Hybrid search implementation
-- Reasoning transparency layer
+- Response streaming with reasoning chains
 
-### Phase 5: UI & Integration (Week 2-3)
-- Streamlit interface
-- End-to-end workflow testing
-- Performance optimization
+**Key Features**:
+- Agentic query routing
+- Transparent reasoning display
+- Multi-database query orchestration
+- Real-time streaming responses
 
 ---
 
