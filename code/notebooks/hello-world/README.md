@@ -1,83 +1,47 @@
 # Hello World Snowflake Notebook
 
-A simple "Hello World" notebook demonstrating Snowflake Notebooks deployment using the Snowflake CLI.
+A simple "Hello World" notebook demonstrating Snowflake Notebooks deployment with Python automation.
 
-## 📁 Project Structure
+## 🚀 Quick Deploy
 
+```bash
+cd ~/Desktop/lyzr-hackathon/code/notebooks/hello-world
+python3 deploy_notebook.py
 ```
-hello-world/
-├── hello_world.ipynb    # Jupyter notebook with Python and SQL cells
-├── snowflake.yml        # Snowflake CLI project configuration
-└── README.md           # This file
-```
+
+**Access**: https://app.snowflake.com/fhweltt/xs07400/#/notebooks/SNOWFLAKE_LEARNING_DB.PUBLIC.HELLO_WORLD_NOTEBOOK
 
 ## 📓 Notebook Contents
 
-The notebook includes:
-1. **Markdown Cell**: Title header
-2. **Markdown Cell**: Description
-3. **Python Cell**: Prints "Hello, World!"
-4. **SQL Cell**: Executes a simple Snowflake query showing current user and timestamp
+1. **Markdown**: "# Hello World Notebook"
+2. **Markdown**: Description
+3. **Python**: `print("Hello, World!")`
+4. **SQL**: Query showing current user and timestamp
 
-## 🚀 Deployment
+## 📂 Files
 
-### Prerequisites
+- `hello_world.ipynb` - Jupyter notebook
+- `deploy_notebook.py` - Automated deployment script
+- `snowflake.yml` - Snowflake CLI configuration
 
-1. **Snowflake CLI installed**
+## 🔐 Prerequisites
+
+1. Create `.env` file in project root with:
    ```bash
-   # Check if installed
-   snow --version
+   SNOWFLAKE_ACCOUNT=FHWELTT-XS07400
+   SNOWFLAKE_USER=HARSHITCODES
+   SNOWFLAKE_PASSWORD=your_password
+   SNOWFLAKE_ROLE=ACCOUNTADMIN
+   SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+   SNOWFLAKE_DATABASE=SNOWFLAKE_LEARNING_DB
+   SNOWFLAKE_SCHEMA=PUBLIC
    ```
 
-2. **Snowflake connection configured** in `~/.snowflake/config.toml`
-   ```toml
-   [connections.default]
-   account = "FHWELTT-XS07400"
-   user = "HARSHITCODES"
-   authenticator = "oauth"
-   token = "<your_pat_token>"
-   role = "ACCOUNTADMIN"
-   warehouse = "COMPUTE_WH"
-   database = "SNOWFLAKE_LEARNING_DB"
-   schema = "PUBLIC"
+2. Install dependencies:
+   ```bash
+   pip3 install snowflake-connector-python python-dotenv
    ```
 
-### Deploy to Snowflake
+## 📚 Documentation
 
-```bash
-# Navigate to project directory
-cd /Users/harshitchoudhary/Desktop/lyzr-hackathon/code/notebooks/hello-world
-
-# Deploy the notebook
-snow notebook deploy
-
-# Get the notebook URL
-snow notebook get-url --name hello_world
-
-# Or open directly in browser
-snow notebook open --name hello_world
-```
-
-## 🔗 Access
-
-After deployment, access your notebook at:
-- **Direct URL**: https://app.snowflake.com/fhweltt/xs07400/#/notebooks
-- **Via CLI**: `snow notebook open --name hello_world`
-
-## 📝 Notes
-
-- The notebook is deployed to: `SNOWFLAKE_LEARNING_DB.PUBLIC`
-- Files are staged in: `@SNOWFLAKE_LEARNING_DB.PUBLIC.NOTEBOOKS_STAGE`
-- Compute warehouse: `COMPUTE_WH`
-
-## 🔒 Security
-
-- Never commit `.env` files containing PAT tokens
-- Snowflake credentials are stored locally in `~/.snowflake/config.toml` (not in repo)
-- PAT token stored in project root `.env` (gitignored)
-
-## 📚 References
-
-- [Snowflake CLI Documentation](https://docs.snowflake.com/en/developer-guide/snowflake-cli)
-- [Snowflake Notebooks Documentation](https://docs.snowflake.com/en/user-guide/ui-snowsight/notebooks)
-- [OAuth Personal Access Tokens](https://docs.snowflake.com/en/user-guide/oauth-personal-access-token)
+See `notes/SNOWFLAKE_NOTEBOOK_SETUP.md` for complete documentation.

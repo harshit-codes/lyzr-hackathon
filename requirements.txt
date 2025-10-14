@@ -1,0 +1,21 @@
+# Core dependencies
+sqlmodel==0.0.14
+pydantic==2.5.0
+python-dotenv==1.0.0
+
+# Database
+snowflake-sqlalchemy==1.5.1
+snowflake-connector-python==3.6.0
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Jupyter notebooks
+jupyter==1.0.0
+ipykernel==6.27.1
+
+# Optional: For future phases
+# openai==1.6.1
+# langchain==0.1.0
+# faiss-cpu==1.7.4

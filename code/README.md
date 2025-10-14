@@ -4,37 +4,82 @@
 
 ```
 code/
-├── notebooks/          # Rapid prototyping notebooks
-│   └── prototype_v1.ipynb  # Initial end-to-end implementation
-└── src/               # Production code (will be populated after notebook validation)
-    ├── models/        # Data models (Schema, Node, Edge)
-    ├── database/      # Snowflake and export connectors
-    ├── processing/    # Document processing pipeline
-    ├── retrieval/     # Retrieval orchestrator
-    └── ui/            # Streamlit components
+├── graph_rag/              # Phase 1: Foundation (✅ Complete)
+│   ├── models/            # Data models (Project, Schema, Node, Edge)
+│   ├── validation/        # Validators (Structured, Unstructured, Vector, Schema)
+│   ├── db/                # Database connection and session management
+│   └── tests/             # 192+ passing tests
+│
+├── superscan/              # SuperScan: Smart Schema Design (🚧 In Progress)
+│   ├── pdf_parser.py      # PDF upload and parsing
+│   ├── fast_scan.py       # Fast scan with low-reasoning LLM
+│   ├── schema_designer.py # LLM-assisted schema design
+│   └── feedback_loop.py   # User iteration and refinement
+│
+├── superkb/                # SuperKB: Knowledge Base Construction (📋 Planned)
+│   ├── deep_scan.py       # Deep scan with chunking
+│   ├── entity_resolver.py # LLM-assisted entity resolution
+│   ├── embedder.py        # OpenAI embedding generation
+│   └── exporters/         # Multi-DB sync (Postgres, Neo4j, Pinecone)
+│       ├── postgres.py
+│       ├── neo4j.py
+│       └── pinecone.py
+│
+├── superchat/              # SuperChat: Intelligent Retrieval (📋 Planned)
+│   ├── agent.py           # Query analysis and tool selection
+│   ├── tools/             # Retrieval tools
+│   │   ├── relational.py  # SQL generation
+│   │   ├── graph.py       # Cypher generation
+│   │   └── semantic.py    # Vector search
+│   └── context.py         # Context and chat-space management
+│
+├── demo/                   # Streamlit Demo (📋 Planned)
+│   └── app.py             # End-to-end workflow showcase
+│
+└── notebooks/              # Development notebooks
+    └── hello-world/       # Snowflake connection testing
 ```
 
-## Development Approach
+## Development Approach: SuperScan → SuperKB → SuperChat
 
-### Phase 0: Notebook-First Prototyping (Current)
-1. Build complete functionality in `notebooks/prototype_v1.ipynb`
-2. Test all components:
-   - Data models with Pydantic
-   - Snowflake integration
-   - Document processing
-   - Export scripts (Neo4j, Pinecone, PostgreSQL)
-   - Retrieval orchestrator
-3. Host notebook in Streamlit for immediate testing
-4. Validate architecture decisions
+### ✅ Phase 1: Foundation (Complete)
+- SQLModel + Snowflake core with validation framework
+- Project/Schema/Node/Edge models with multimodal data support
+- 192+ passing tests with comprehensive coverage
+- Production-ready nomenclature and documentation
 
-### Phase 1+: Production Refactoring
-Once notebook is validated:
-1. Refactor into proper Python modules in `src/`
-2. Create clean class hierarchies
-3. Add comprehensive error handling
-4. Implement logging and monitoring
-5. Write unit and integration tests
-6. Build production Streamlit UI
+### 🚧 Current: SuperScan Implementation
+Smart schema design with LLM assistance and user iteration:
+1. PDF upload and validation
+2. Fast scan using low-reasoning LLM (GPT-3.5-turbo)
+3. Schema proposal generation
+4. User feedback loop for refinement
+5. Schema finalization and storage
+
+### 📋 Next: SuperKB Implementation
+Knowledge base construction with entity resolution:
+1. Deep scan with intelligent chunking
+2. LLM-assisted entity extraction and resolution
+3. Embedding generation via OpenAI
+4. Multi-database sync:
+   - PostgreSQL (Relational)
+   - Neo4j (Graph with Cypher)
+   - Pinecone (Vector embeddings)
+
+### 📋 Then: SuperChat Implementation
+Intelligent retrieval with dynamic tool selection:
+1. Query analysis with LLM
+2. Dynamic tool selection (Relational, Graph, Semantic)
+3. Multi-step reasoning with transparency
+4. Context and chat-space management
+5. Citation generation
+
+### 📋 Finally: Streamlit Demo
+End-to-end workflow showcase for hackathon:
+1. Interactive UI for all three components
+2. Guided walkthrough with sample data
+3. Live reasoning transparency
+4. Demo video recording
 
 ## Getting Started
 
