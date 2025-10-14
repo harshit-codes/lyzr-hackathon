@@ -16,7 +16,7 @@ python3 deploy_notebook.py
 ```
 Account:   FHWELTT-XS07400
 User:      HARSHITCODES
-Password:  ***REMOVED***
+Password:  ***REDACTED_PASSWORD***
 Role:      ACCOUNTADMIN
 Warehouse: COMPUTE_WH
 Database:  SNOWFLAKE_LEARNING_DB
