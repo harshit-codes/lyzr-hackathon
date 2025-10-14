@@ -19,3 +19,12 @@ Desktop.ini
 
 # Snowflake
 .snowflake/
+
+# Environment files (prevent credential leaks)
+.env
+.env.*
+.env.backup
+*.env.backup
+.env.local
+.env.development
+.env.production
