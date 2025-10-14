@@ -4,17 +4,21 @@
 
 This roadmap outlines our implementation from the **Phase 1 foundation** (multimodal database architecture) to a **complete user journey** in Snowflake Notebook, culminating in a Streamlit demo for the Lyzr Hackathon.
 
-**Current State**: ✅ Phase 1 Complete
+**Current State**: ✅ **[Phase 1 Complete](phase1-foundation.md)** 
 - SQLModel + Snowflake core with validation framework
 - Project/Schema/Node/Edge models with multimodal data support
 - 192+ passing tests with comprehensive coverage
 - Production-ready nomenclature and documentation
 
+**📖 [Read detailed Phase 1 documentation →](phase1-foundation.md)** - Research, architecture decisions, data model design, validation framework, and test-driven development.
+
+---
+
 **Hackathon Goal**: Complete User Journey
 - **SuperScan**: PDF upload → fast scan → LLM-assisted schema design → user iteration
 - **SuperKB**: Deep scan → entity resolution → multi-database sync
 - **SuperChat**: Natural language retrieval → dynamic tool selection → reasoning transparency
-- **Demo**: Streamlit application showcasing end-to-end workflow
+- **Demo**: 📋 **[Streamlit Application](phase3-streamlit-demo.md)** showcasing end-to-end workflow
 
 ---
 
@@ -589,6 +593,8 @@ class SemanticTool(RetrievalTool):
 ---
 
 ### Streamlit Demo
+
+**📖 [Read detailed Phase 3 documentation →](phase3-streamlit-demo.md)** - Complete UI/UX design, demo script, technical implementation, and deployment guide.
 
 **Goal**: Showcase end-to-end workflow in an interactive web application for hackathon demo.
 
