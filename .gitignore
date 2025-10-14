@@ -11,3 +11,11 @@ Icon?
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Snowflake
+.snowflake/
