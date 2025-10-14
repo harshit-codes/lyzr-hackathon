@@ -17,7 +17,8 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field as PydanticField, field_validator
-from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel
+from graph_rag.db import VariantType
 
 
 class ProjectStatus(str, Enum):
@@ -166,13 +167,11 @@ class Project(SQLModel, table=True):
     project_id: UUID = Field(
         default_factory=uuid4,
         primary_key=True,
-        index=True,
         description="Unique identifier for the project"
     )
     
     # Core identification
     project_name: str = Field(
-        index=True,
         unique=True,
         description="Unique human-readable name for the project"
     )
@@ -189,7 +188,6 @@ class Project(SQLModel, table=True):
     
     # Ownership
     owner_id: str = Field(
-        index=True,
         description="User/organization ID that owns this project"
     )
     
@@ -201,34 +199,35 @@ class Project(SQLModel, table=True):
     # Status and lifecycle
     status: ProjectStatus = Field(
         default=ProjectStatus.ACTIVE,
-        index=True,
         description="Current project status"
     )
     
-    # Configuration
-    config: ProjectConfig = Field(
-        sa_column=Column(JSON),
-        default_factory=ProjectConfig,
-        description="Project-level configuration settings"
+    # Configuration (simplified for Snowflake compatibility)
+    # Store as Dict instead of ProjectConfig to avoid VARIANT serialization issues
+    config: Dict[str, Any] = Field(
+        sa_column=Column(VariantType),
+        default_factory=dict,
+        description="Project-level configuration settings (JSON)"
     )
     
-    # Statistics
-    stats: ProjectStats = Field(
-        sa_column=Column(JSON),
-        default_factory=ProjectStats,
-        description="Project statistics (nodes, edges, documents, etc.)"
+    # Statistics (simplified for Snowflake compatibility)  
+    # Store as Dict instead of ProjectStats to avoid VARIANT serialization issues
+    stats: Dict[str, Any] = Field(
+        sa_column=Column(VariantType),
+        default_factory=dict,
+        description="Project statistics (nodes, edges, documents, etc.) (JSON)"
     )
     
     # Tags and categorization
     tags: List[str] = Field(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=list,
         description="User-defined tags for project categorization"
     )
     
     # Custom metadata (renamed to avoid SQLAlchemy reserved word)
     custom_metadata: Dict[str, Any] = Field(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=dict,
         description="Additional project metadata"
     )
@@ -236,7 +235,6 @@ class Project(SQLModel, table=True):
     # Timestamps
     created_at: datetime = Field(
         default_factory=datetime.utcnow,
-        index=True,
         description="When this project was created"
     )
     

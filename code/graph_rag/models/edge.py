@@ -18,7 +18,8 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator, model_validator
-from sqlmodel import JSON, Column, Field as SQLField, Relationship, SQLModel
+from sqlmodel import Column, Field as SQLField, Relationship, SQLModel
+from graph_rag.db import VariantType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -90,38 +91,32 @@ class Edge(SQLModel, table=True):
     edge_id: UUID = SQLField(
         default_factory=uuid4,
         primary_key=True,
-        index=True,
         description="Unique identifier for the edge"
     )
     
     # Core identification
     edge_name: str = SQLField(
-        index=True,
         description="Human-readable name for this relationship (e.g., 'works_at', 'knows')"
     )
     
     relationship_type: str = SQLField(
-        index=True,
         description="Type of relationship (e.g., WORKS_AT, KNOWS, MANAGES) from schema"
     )
     
     # Schema conformance
     schema_id: UUID = SQLField(
         foreign_key="schemas.schema_id",
-        index=True,
         description="Reference to the Schema this edge conforms to"
     )
     
     # Graph topology - start and end nodes
     start_node_id: UUID = SQLField(
         foreign_key="nodes.node_id",
-        index=True,
         description="Source node (from) of the relationship"
     )
     
     end_node_id: UUID = SQLField(
         foreign_key="nodes.node_id",
-        index=True,
         description="Target node (to) of the relationship"
     )
     
@@ -133,21 +128,21 @@ class Edge(SQLModel, table=True):
     
     # Structured data - relationship properties
     structured_data: Dict[str, Any] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=dict,
         description="Structured relationship properties (e.g., {since: 2020, role: 'manager'})"
     )
     
     # Unstructured data - relationship descriptions
     unstructured_data: List[UnstructuredBlob] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=list,
         description="Text descriptions of the relationship with chunking info"
     )
     
     # Vector embedding for relationship similarity
     vector: Optional[List[float]] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default=None,
         description="Vector embedding of relationship content"
     )
@@ -160,13 +155,12 @@ class Edge(SQLModel, table=True):
     # Project association
     project_id: UUID = SQLField(
         foreign_key="projects.project_id",
-        index=True,
         description="Project this edge belongs to"
     )
     
     # Edge metadata (renamed to avoid SQLAlchemy reserved word)
     edge_metadata: EdgeMetadata = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=EdgeMetadata,
         description="Additional metadata about edge origin and context"
     )
@@ -458,7 +452,6 @@ class TraversalPattern(SQLModel):
 
 
 # Update Schema model to include back-reference
-from typing import TYPE_CHECKING
 from .node import Node
 
 if TYPE_CHECKING:

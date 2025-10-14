@@ -9,9 +9,10 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel, Column, JSON, ForeignKey, Relationship
+from sqlmodel import Field, SQLModel, Column, ForeignKey, Relationship
 from pydantic import field_validator
 from typing import TYPE_CHECKING
+from graph_rag.db import VariantType
 
 if TYPE_CHECKING:
     from .project import Project
@@ -48,7 +49,6 @@ class Schema(SQLModel, table=True):
     schema_name: str = Field(
         ...,
         max_length=255,
-        index=True,
         description="Schema name (e.g., 'Person', 'WORKS_AT')"
     )
     
@@ -66,14 +66,12 @@ class Schema(SQLModel, table=True):
     
     is_active: bool = Field(
         default=True,
-        index=True,
         description="Whether this version is active"
     )
     
     # Project Association
     project_id: UUID = Field(
         foreign_key="projects.project_id",
-        index=True,
         description="Project this schema belongs to"
     )
     
@@ -86,28 +84,28 @@ class Schema(SQLModel, table=True):
     # Structured Data Configuration
     structured_attributes: List[AttributeDefinition] = Field(
         default_factory=list,
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         description="List of structured attribute definitions"
     )
     
     # Unstructured Data Configuration
     unstructured_config: UnstructuredDataConfig = Field(
         default_factory=UnstructuredDataConfig,
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         description="Configuration for unstructured data handling"
     )
     
     # Vector Configuration
     vector_config: VectorConfig = Field(
         default_factory=lambda: VectorConfig(dimension=1536),
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         description="Vector embedding configuration"
     )
     
     # Additional Settings
     config: Dict[str, Any] = Field(
         default_factory=dict,
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         description="Additional schema-specific configuration"
     )
     

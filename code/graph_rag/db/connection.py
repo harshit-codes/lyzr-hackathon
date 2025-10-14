@@ -70,13 +70,19 @@ class DatabaseConfig:
     
     def get_connection_string(self) -> str:
         """Build Snowflake connection string."""
+        from urllib.parse import quote_plus
+        
         self.validate()
         
         # Snowflake SQLAlchemy connection string format
         # snowflake://<user>:<password>@<account>/<database>/<schema>?warehouse=<warehouse>&role=<role>
+        # URL-encode credentials to handle special characters
+        
+        user_encoded = quote_plus(self.user)
+        password_encoded = quote_plus(self.password)
         
         conn_str = (
-            f"snowflake://{self.user}:{self.password}@{self.account}/"
+            f"snowflake://{user_encoded}:{password_encoded}@{self.account}/"
             f"{self.database}/{self.schema}"
             f"?warehouse={self.warehouse}"
         )
@@ -178,6 +184,8 @@ class DatabaseConnection:
         from ..models.schema import Schema
         from ..models.node import Node
         from ..models.edge import Edge
+        from ..models.file_record import FileRecord
+        from ..models.ontology_proposal import OntologyProposal
         
         # Create all tables
         SQLModel.metadata.create_all(engine)

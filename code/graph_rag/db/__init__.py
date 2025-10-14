@@ -9,6 +9,7 @@ Exports:
 - init_database
 - test_connection
 - close_database
+- VariantType
 """
 
 from .connection import (
@@ -20,6 +21,7 @@ from .connection import (
     test_connection,
     close_database,
 )
+from .variant_type import VariantType
 
 __all__ = [
     "DatabaseConnection",
@@ -29,4 +31,5 @@ __all__ = [
     "init_database",
     "test_connection",
     "close_database",
+    "VariantType",
 ]

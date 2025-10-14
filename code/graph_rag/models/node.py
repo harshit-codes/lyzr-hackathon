@@ -16,7 +16,8 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator, model_validator
-from sqlmodel import JSON, Column, Field as SQLField, Relationship, SQLModel
+from sqlmodel import Column, Field as SQLField, Relationship, SQLModel
+from graph_rag.db import VariantType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -142,45 +143,41 @@ class Node(SQLModel, table=True):
     node_id: UUID = SQLField(
         default_factory=uuid4,
         primary_key=True,
-        index=True,
         description="Unique identifier for the node"
     )
     
     # Core identification
     node_name: str = SQLField(
-        index=True,
         description="Human-readable name/label for this entity instance"
     )
     
     entity_type: str = SQLField(
-        index=True,
         description="Type of entity (e.g., Person, Organization, Concept) from schema"
     )
     
     # Schema conformance
     schema_id: UUID = SQLField(
         foreign_key="schemas.schema_id",
-        index=True,
         description="Reference to the Schema this node conforms to"
     )
     
     # Structured data - conforms to schema definition
     structured_data: Dict[str, Any] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=dict,
         description="Structured attributes conforming to schema (e.g., {age: 30, role: 'engineer'})"
     )
     
     # Unstructured data - text blobs with chunk metadata
     unstructured_data: List[UnstructuredBlob] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=list,
         description="List of text blobs (descriptions, content, etc.) with chunking info"
     )
     
     # Vector embedding for semantic search
     vector: Optional[List[float]] = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default=None,
         description="Vector embedding of node content (from OpenAI/other embedding model)"
     )
@@ -193,13 +190,12 @@ class Node(SQLModel, table=True):
     # Project association
     project_id: UUID = SQLField(
         foreign_key="projects.project_id",
-        index=True,
         description="Project this node belongs to"
     )
     
     # Node metadata (renamed to avoid SQLAlchemy reserved word)
     node_metadata: NodeMetadata = SQLField(
-        sa_column=Column(JSON),
+        sa_column=Column(VariantType),
         default_factory=NodeMetadata,
         description="Additional metadata about node origin and context"
     )
@@ -373,7 +369,5 @@ class NodeQuery(SQLModel):
 
 
 # Update Schema model to include back-reference
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     Schema.model_rebuild()

@@ -78,96 +78,88 @@ This roadmap outlines our implementation from the **Phase 1 foundation** (multim
 
 ### SuperScan: Smart Schema Design
 
-**Goal**: Transform uploaded PDFs into LLM-assisted schema designs through iterative user feedback.
+**Goal**: Provide fast, sparse parsing to understand the ontology of the underlying data and generate/maintain schema structures for our multimodal model. SuperScan does NOT perform deep extraction or entity resolution—that happens in SuperKB. SuperScan focuses on: project/file management, schema CRUD and versioning, and quick ontology proposals.
+
+#### Scope (Phase 2 Focus)
+- Project API to create/manage projects (each project can have many files)
+- File ingestion API (PDF first) with lightweight parsing and metadata
+- Fast LLM-assisted ontology proposal (sparse scan) for nodes/edges
+- Schema CRUD + versioning (structured attributes; allow schema-less extensions for later)
+- Persist everything in Snowflake as the single source of truth
+- Defer entity resolution, chunk-level embeddings, exporters, and adapters to later phases
 
 #### Features
 
-1. **PDF Upload**
-   - Multi-page PDF support
-   - File validation and preprocessing
-   - Document metadata extraction
+1. **Project API**
+   - Create/update/delete projects
+   - List projects and project metadata
+   - Single master store; segregate by `project_id` (logical isolation in Snowflake)
 
-2. **Fast Scan**
-   - Low-reasoning LLM (e.g., GPT-3.5-turbo) for rapid analysis
-   - Extract document structure and key entities
-   - Identify potential relationships
+2. **File Ingestion API**
+   - Upload PDFs (multi-page), validate, extract basic metadata
+   - Store file records under the project; link to proposed ontologies
+   - Lightweight text extraction only for fast ontology hints (no deep chunking)
 
-3. **LLM-Assisted Schema Design**
-   - Automatic entity type identification
-   - Relationship type suggestions
-   - Attribute inference with types
-   - Initial schema proposal generation
+3. **Fast Ontology Proposal (Sparse Scan)**
+   - Low-reasoning LLM to identify candidate entities, relationships, and attributes
+   - Propose schema(s) for nodes and edges with suggested attribute types
+   - Include optional schema-less property buckets for future KB phase
 
-4. **User Iteration & Feedback Loop**
-   - Display proposed schema in readable format
-   - Allow user modifications:
-     - Add/remove entity types
-     - Modify attributes and types
-     - Refine relationships
-   - Re-generate schema based on feedback
-   - Iterate until user finalizes
+4. **Schema CRUD + Versioning**
+   - Create/read/update/deprecate schemas per project
+   - Semantic versioning; validators from Phase 1 enforce structure
+   - Track proposal provenance (which files informed this ontology)
 
-5. **Schema Finalization**
-   - Validate final schema against Phase 1 validators
-   - Store in Snowflake as versioned Schema entity
-   - Prepare for deep scan phase
+5. **Snowflake-First Persistence**
+   - Store projects, files, schemas, and proposals in Snowflake tables
+   - Keep SuperScan write-path simple and auditable
 
-#### Implementation
+#### API Surface (initial)
 
-```python
-class SuperScan:
-    def __init__(self, llm: LLM, validator: SchemaValidator):
-        self.llm = llm
-        self.validator = validator
-    
-    async def upload_pdf(self, file_path: str) -> Document:
-        """Parse PDF and extract metadata"""
-        return parse_pdf(file_path)
-    
-    async def fast_scan(self, document: Document) -> SchemaProposal:
-        """
-        Fast scan using low-reasoning LLM
-        - Extract key entities
-        - Identify relationships
-        - Propose initial schema
-        """
-        prompt = self._build_fast_scan_prompt(document)
-        response = await self.llm.generate(prompt, model="gpt-3.5-turbo")
-        return self._parse_schema_proposal(response)
-    
-    async def iterate_with_user(
-        self, 
-        proposal: SchemaProposal, 
-        user_feedback: str
-    ) -> SchemaProposal:
-        """Refine schema based on user feedback"""
-        prompt = self._build_refinement_prompt(proposal, user_feedback)
-        response = await self.llm.generate(prompt)
-        return self._parse_schema_proposal(response)
-    
-    async def finalize_schema(
-        self, 
-        proposal: SchemaProposal, 
-        project_id: UUID
-    ) -> Schema:
-        """
-        Validate and store final schema
-        Returns versioned Schema entity
-        """
-        is_valid, error = self.validator.validate(proposal)
-        if not is_valid:
-            raise SchemaValidationError(error)
-        
-        return await self._create_schema(proposal, project_id)
-```
+- Project
+  - POST /api/v1/projects
+  - GET /api/v1/projects/{project_id}
+  - PATCH /api/v1/projects/{project_id}
+  - GET /api/v1/projects
+
+- Files
+  - POST /api/v1/projects/{project_id}/files (multipart PDF upload)
+  - GET  /api/v1/projects/{project_id}/files
+  - GET  /api/v1/projects/{project_id}/files/{file_id}
+
+- Schemas
+  - POST   /api/v1/projects/{project_id}/schemas (create from proposal or manual)
+  - GET    /api/v1/projects/{project_id}/schemas
+  - GET    /api/v1/projects/{project_id}/schemas/{schema_id}
+  - PATCH  /api/v1/projects/{project_id}/schemas/{schema_id} (minor updates)
+  - POST   /api/v1/projects/{project_id}/schemas/{schema_id}/deprecate
+
+- Ontology Proposals
+  - POST /api/v1/projects/{project_id}/proposals (trigger sparse LLM scan)
+  - GET  /api/v1/projects/{project_id}/proposals/{proposal_id}
+  - POST /api/v1/projects/{project_id}/proposals/{proposal_id}/refine (user feedback)
+  - POST /api/v1/projects/{project_id}/proposals/{proposal_id}/finalize → Schema(s)
+
+#### Snowflake Integration Plan (SuperScan)
+
+- Keep a single Snowflake database for all projects; use logical isolation via `project_id` columns
+- Tables: `projects`, `files`, `schemas`, `ontology_proposals` (all already compatible with Phase 1 models or minor extensions)
+- Store raw file metadata and sparse extracted text snippets (not full deep chunks yet)
+- Use existing SQLModel models where applicable; add lightweight `File` and `OntologyProposal` tables
+- Transactional writes via existing `DatabaseConnection` context manager
+
+#### Out-of-Scope in SuperScan
+- Deep chunking, embeddings, entity resolution, and datapoint creation (SuperKB)
+- Exporters/adapters to Neo4j/Pinecone (later phase)
+- Advanced retrieval (SuperChat)
 
 #### Success Metrics
 
-- ✅ Support PDFs up to 100 pages
-- ✅ Fast scan completes in <30 seconds
-- ✅ Schema proposal >80% accuracy vs manual design
-- ✅ User iteration converges in <5 rounds
-- ✅ 100% validation pass rate for finalized schemas
+- ✅ Sparse scan completes in <30 seconds per document
+- ✅ >80% of proposed schemas accepted with minor edits
+- ✅ CRUD & versioning stability: 100% validator pass rate for finalized schemas
+- ✅ Snowflake writes <500 ms p95 for metadata and schema operations
+- ✅ Clean separation: no entity resolution or embeddings in SuperScan
 
 ---
 
@@ -735,45 +727,42 @@ if __name__ == "__main__":
 ```
 
 ---
+### Implementation Checklist
 
-## Implementation Checklist
+### SuperScan Implementation (Now)
+- [ ] Project API: create/update/list projects
+- [ ] File ingestion API: upload PDFs, basic metadata storage
+- [ ] Sparse ontology proposal (fast LLM scan) per project/file
+- [ ] Schema CRUD + versioning endpoints
+- [ ] Store proposals and finalized schemas in Snowflake
+- [ ] Validation via existing Phase 1 validators
+- [ ] Minimal admin UI or notebook examples (optional)
 
-### SuperScan Implementation
-- [ ] PDF parsing and upload
-- [ ] Fast scan LLM integration
-- [ ] Schema proposal generation
-- [ ] User feedback loop UI
-- [ ] Schema finalization and storage
+### SuperKB Implementation (Next)
+- [ ] Deep scan with chunking (schema-aware + schema-less buckets)
+- [ ] Entity extraction and resolution (noisy dedup, thresholds)
+- [ ] Embedding generation and storage on nodes/edges
+- [ ] Postgres export (relational), Neo4j export (graph), Pinecone export (vector)
+- [ ] Multi-DB sync orchestration (batch jobs)
 
-### SuperKB Implementation
-- [ ] Deep scan with chunking
-- [ ] Entity extraction and resolution
-- [ ] Embedding generation
-- [ ] PostgreSQL exporter
-- [ ] Neo4j exporter
-- [ ] Pinecone exporter
-- [ ] Multi-DB sync orchestration
-
-### SuperChat Implementation
+### SuperChat Implementation (Later)
 - [ ] Query analysis LLM integration
-- [ ] Relational tool (SQL generation)
-- [ ] Graph tool (Cypher generation)
+- [ ] Relational tool (SQL against Postgres/Snowflake)
+- [ ] Graph tool (Cypher against Neo4j)
 - [ ] Semantic tool (vector search)
-- [ ] Context management
+- [ ] Context management and streaming responses
 - [ ] Response generation with citations
-- [ ] Chat-space management
 
 ### Streamlit Demo
-- [ ] UI implementation
-- [ ] Workflow integration
-- [ ] Demo walkthrough
+- [ ] SuperScan console/notebook demo (ingest → propose → finalize schema)
+- [ ] End-to-end demo (after SuperKB)
 - [ ] Documentation and video
 
 ### Final Polish
 - [ ] Testing and bug fixes
 - [ ] Performance optimization
-- [ ] Demo video recording
 - [ ] README and documentation
+- [ ] Google Form submission
 - [ ] Google Form submission
 
 ---

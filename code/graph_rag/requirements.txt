@@ -18,6 +18,9 @@ python-dotenv==1.1.0       # Environment variables
 openai==1.59.6             # OpenAI API for embeddings and LLM
 tiktoken==0.8.0            # Token counting
 
+# PDF Processing (SuperScan)
+PyPDF2==3.0.1              # Lightweight PDF text extraction
+
 # Utilities
 python-dateutil==2.9.0.post0
 uuid==1.30
