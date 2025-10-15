@@ -1,10 +1,8 @@
 definition_version: 1
 
-# Dummy change to trigger workflow for debugging
-# Another dummy change
-# Yet another dummy change
-
 streamlit:
   name: SUPERSUITE_APP
+  database: SUPERSUITE_DB
+  schema: SUPERSUITE_SCHEMA
   main_file: app/streamlit_app.py
   query_warehouse: COMPUTE_WH
