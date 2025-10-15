@@ -14,9 +14,15 @@ pydantic-settings==2.7.1    # Settings management
 # Environment & Configuration
 python-dotenv==1.1.0       # Environment variables
 
-# OpenAI & Embeddings
-openai==1.59.6             # OpenAI API for embeddings and LLM
+# LLM & ML APIs
+openai==1.59.6             # OpenAI API (legacy - use HF instead)
 tiktoken==0.8.0            # Token counting
+
+# HuggingFace Ecosystem (NEW: Primary ML provider)
+sentence-transformers==3.3.1  # Embeddings and semantic similarity
+transformers==4.47.1          # NER, classification, inference
+huggingface-hub==0.27.1       # Model hub integration
+torch==2.5.1                  # PyTorch backend
 
 # PDF Processing (SuperScan)
 PyPDF2==3.0.1              # Lightweight PDF text extraction
@@ -36,8 +42,10 @@ ipykernel==6.29.5
 matplotlib==3.10.0
 pandas==2.2.3
 
+# Graph & Vector Databases
+neo4j==5.27.0              # Neo4j graph database export
+
 # Future Phase Dependencies (commented for now)
-# neo4j==5.27.0            # Phase 2: Graph database
-# pinecone-client==5.0.1   # Phase 2: Vector database
-# langchain==0.3.15        # Phase 4: Agentic retrieval
-# streamlit==1.41.1        # Phase 5: UI
+# pinecone-client==5.0.1   # Vector database
+# langchain==0.3.15        # Agentic retrieval
+# streamlit==1.41.1        # UI

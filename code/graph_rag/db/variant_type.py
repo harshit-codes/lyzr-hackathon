@@ -9,7 +9,7 @@ when reading from the database.
 import json
 from typing import Any, Optional
 from sqlalchemy.types import TypeDecorator
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, literal
 from snowflake.sqlalchemy import VARIANT
 
 
@@ -33,6 +33,14 @@ class VariantType(TypeDecorator):
     
     impl = VARIANT
     cache_ok = True
+    
+    def bind_expression(self, bindvalue):
+        """
+        Wrap bind values with PARSE_JSON for Snowflake VARIANT columns.
+        
+        This ensures that JSON strings are properly parsed by Snowflake.
+        """
+        return func.PARSE_JSON(bindvalue)
     
     def process_bind_param(self, value: Any, dialect) -> Any:
         """

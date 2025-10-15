@@ -27,6 +27,7 @@ from .edge import (
 )
 from .file_record import FileRecord
 from .ontology_proposal import OntologyProposal
+from .chunk import Chunk
 
 __all__ = [
     # Project
@@ -57,4 +58,7 @@ __all__ = [
     # File & Ontology
     "FileRecord",
     "OntologyProposal",
+    
+    # Chunking
+    "Chunk",
 ]
