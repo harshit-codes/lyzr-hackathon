@@ -1,0 +1,51 @@
+# Core Dependencies for Agentic Graph RAG System
+# Phase 1: Core Data Model Architecture
+
+# Database & ORM
+sqlmodel==0.0.22           # SQLModel for Pydantic + SQLAlchemy integration
+snowflake-connector-python==3.17.3
+snowflake-sqlalchemy==1.7.4
+psycopg2-binary==2.9.10    # PostgreSQL adapter (for future exports)
+
+# Data Validation & Serialization
+pydantic==2.11.7           # Data validation
+pydantic-settings==2.7.1    # Settings management
+
+# Environment & Configuration
+python-dotenv==1.1.0       # Environment variables
+
+# LLM & ML APIs
+openai==1.59.6             # OpenAI API (legacy - use HF instead)
+tiktoken==0.8.0            # Token counting
+
+# HuggingFace Ecosystem (NEW: Primary ML provider)
+sentence-transformers==3.3.1  # Embeddings and semantic similarity
+transformers==4.47.1          # NER, classification, inference
+huggingface-hub==0.27.1       # Model hub integration
+torch==2.5.1                  # PyTorch backend
+
+# PDF Processing (SuperScan)
+PyPDF2==3.0.1              # Lightweight PDF text extraction
+
+# Utilities
+python-dateutil==2.9.0.post0
+uuid==1.30
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# Notebook Environment
+jupyter==1.1.1
+ipykernel==6.29.5
+matplotlib==3.10.0
+pandas==2.2.3
+
+# Graph & Vector Databases
+neo4j==5.27.0              # Neo4j graph database export
+
+# Future Phase Dependencies (commented for now)
+# pinecone-client==5.0.1   # Vector database
+# langchain==0.3.15        # Agentic retrieval
+# streamlit==1.41.1        # UI

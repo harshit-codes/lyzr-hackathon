@@ -3,12 +3,12 @@
 
 echo "🚀 Setting up SuperSuite codebase structure..."
 
-# Create symlink for app/code if it doesn't exist
-if [ ! -L "app/code" ]; then
-    echo "📁 Creating symlink: app/code -> code"
-    ln -s ../code app/code
+# Ensure app directory exists with all code
+if [ ! -d "app" ]; then
+    echo "❌ Error: app directory not found. This should contain the main codebase."
+    exit 1
 else
-    echo "✅ Symlink app/code already exists"
+    echo "✅ App directory exists"
 fi
 
 # Create bin directory if it doesn't exist
@@ -22,8 +22,7 @@ fi
 echo "🎉 Codebase structure setup complete!"
 echo ""
 echo "Current structure:"
-echo "  /code          - Main source code (single source of truth)"
-echo "  /app/code      - Symlink to /code (for CI/CD compatibility)"
-echo "  /bin           - Archive directory for old files"
+echo "  /app           - Main comprehensive codebase (single source of truth)"
+echo "  /bin           - Archive directory for old/duplicate files"
 echo ""
-echo "The codebase now has a single source of truth while maintaining CI/CD compatibility."
+echo "The codebase is ready for development and deployment."

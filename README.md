@@ -170,11 +170,10 @@ Purpose: Maintains conversation state, entity references, and anaphora resolutio
 - Modular stages with error handling and progress tracking
 
 ### 📁 Directory Organization
-*   `app/`: Production-ready Streamlit application
+*   `app/`: Production-ready Streamlit application and comprehensive codebase
     *   `streamlit_app.py`: Main web application
     *   `environment.yml`: Conda environment configuration
-    *   `code/` → `../code/` (symlink): Links to main codebase for CI/CD compatibility
-*   `code/`: The core source code for the project, organized by component:
+    *   `end_to_end_orchestrator.py`: Main pipeline coordinator
     *   `graph_rag/`: Core data models and database functionality
     *   `superscan/`: Document ingestion and schema creation
     *   `superkb/`: Knowledge base construction
