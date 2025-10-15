@@ -42,7 +42,6 @@ jobs:
           SNOWFLAKE_DATABASE: SUPERSUITE_DB
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_INSECURE_MODE: "1"
         run: |
           snow sql -q "CREATE OR REPLACE STAGE SUPERSUITE_STAGE" --temporary-connection
 
@@ -68,37 +67,3 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         run: |
           echo "Files uploaded via Python script"
-
-      - name: Create Stage
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_DATABASE: SUPERSUITE_DB
-          SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        run: |
-          snow sql -q "CREATE OR REPLACE STAGE SUPERSUITE_STAGE" --temporary-connection
-
-      - name: Deploy Streamlit App
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_DATABASE: SUPERSUITE_DB
-          SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        run: |
-          # Upload main file
-          snow sql -q "PUT file://app/streamlit_app.py @SUPERSUITE_DB.SUPERSUITE_SCHEMA.SUPERSUITE_STAGE/streamlit_app.py AUTO_COMPRESS=FALSE OVERWRITE=TRUE" --temporary-connection --insecure
-
-      - name: Upload Code Directory to Stage
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_DATABASE: SUPERSUITE_DB
-          SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        run: |
-          snow sql -q "PUT file://app/code @SUPERSUITE_DB.SUPERSUITE_SCHEMA.SUPERSUITE_STAGE/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE" --temporary-connection --insecure
