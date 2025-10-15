@@ -31,7 +31,6 @@ jobs:
           SNOWFLAKE_DATABASE: SUPERSUITE_DB
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_INSECURE_MODE: "1"
         run: |
           snow connection test --temporary-connection
 
@@ -79,7 +78,7 @@ jobs:
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         run: |
-          snow sql -q "CREATE OR REPLACE STAGE SUPERSUITE_STAGE" --temporary-connection --insecure
+          snow sql -q "CREATE OR REPLACE STAGE SUPERSUITE_STAGE" --temporary-connection
 
       - name: Deploy Streamlit App
         env:
