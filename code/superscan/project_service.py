@@ -1,3 +1,8 @@
+"""
+This module provides the `ProjectService` class, which is responsible for
+managing projects in the database.
+"""
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -6,21 +11,32 @@ from uuid import UUID
 
 class ProjectService:
     """
-    Project management for SuperScan (create/list/update projects).
+    A service for managing projects in the database.
 
-    Responsibilities:
-    - Validate inputs against existing Project model constraints
-    - Orchestrate Snowflake writes via database session
-    - Keep business logic separate from web framework
+    The `ProjectService` class provides methods for creating, retrieving,
+    listing, and updating projects. It is responsible for all business logic
+    related to projects, and it uses the `graph_rag.db` module to interact
+    with the database.
     """
 
     def __init__(self, db):
+        """
+        Initializes the `ProjectService`.
+
+        Args:
+            db: A database connection object.
+        """
         self.db = db  # graph_rag.db.DatabaseConnection
 
     def create_project(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Create a new project.
-        Returns a serializable dict representing the created project.
+        Creates a new project.
+
+        Args:
+            payload: A dictionary containing the project data.
+
+        Returns:
+            A dictionary representing the created project.
         """
         from graph_rag.models import Project  # late import to avoid cycles
 
@@ -40,6 +56,15 @@ class ProjectService:
             }
 
     def get_project(self, project_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Gets a project by its ID.
+
+        Args:
+            project_id: The ID of the project to retrieve.
+
+        Returns:
+            A dictionary representing the project, or `None` if not found.
+        """
         from graph_rag.models import Project
         with self.db.get_session() as session:
             obj = session.get(Project, project_id)
@@ -59,6 +84,18 @@ class ProjectService:
             }
 
     def list_projects(self, owner_id: Optional[str] = None, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
+        """
+        Lists the projects.
+
+        Args:
+            owner_id: An optional owner ID to filter the projects by.
+            limit: The maximum number of projects to return.
+            offset: The number of projects to skip.
+
+        Returns:
+            A dictionary containing a list of projects and the total
+            number of projects.
+        """
         from graph_rag.models import Project
         with self.db.get_session() as session:
             query = session.query(Project)
@@ -75,6 +112,17 @@ class ProjectService:
             }
 
     def patch_project(self, project_id: UUID, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Updates a project.
+
+        Args:
+            project_id: The ID of the project to update.
+            payload: A dictionary containing the data to update.
+
+        Returns:
+            A dictionary representing the updated project, or `None` if the
+            project was not found.
+        """
         from graph_rag.models import Project
         with self.db.get_session() as session:
             obj = session.get(Project, project_id)

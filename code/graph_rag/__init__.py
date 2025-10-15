@@ -1,16 +1,22 @@
 """
-Agentic Graph RAG - Phase 1
+Core data models and database functionality for the Agentic Graph RAG system.
 
-A production-grade knowledge graph system with schema-driven data modeling,
-validation, and Snowflake integration.
+This package provides the foundational components for creating and managing a
+production-grade knowledge graph. It includes:
 
-Main modules:
-- models: Data models (Project, Schema, Node, Edge)
-- validation: Validation utilities
-- db: Database connection and session management
-- notebooks: Interactive demos and tutorials
+- **Data Models**: `Project`, `Schema`, `Node`, and `Edge` models that define the
+  structure of the knowledge graph. These models are built using `sqlmodel` for
+  robust data validation and database mapping.
 
-Version: 1.0.0 (Phase 1)
+- **Database Connectivity**: A `db` module for managing the connection to the
+  Snowflake database, including session management and an event listener for
+  handling Snowflake-specific SQL syntax.
+
+- **Validation**: A `validation` module that provides utilities for validating
+  schemas, structured data, unstructured data, and vector embeddings.
+
+This package is designed to be a self-contained and reusable foundation for
+building knowledge graph applications.
 """
 
 __version__ = "1.0.0"
@@ -48,7 +54,7 @@ __all__ = [
     "__version__",
     "__author__",
     "__description__",
-    
+
     # Models
     "Project",
     "Schema",
@@ -57,13 +63,13 @@ __all__ = [
     "ProjectStatus",
     "SchemaType",
     "EdgeDirection",
-    
+
     # Validation
     "StructuredDataValidator",
     "UnstructuredDataValidator",
     "VectorValidator",
     "SchemaVersionValidator",
-    
+
     # Database
     "get_db",
     "get_session",

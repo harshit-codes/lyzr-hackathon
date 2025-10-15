@@ -1,20 +1,48 @@
+"""
+This module provides the `FileService` class, which is responsible for
+managing file records in the database.
+"""
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
 class FileService:
     """
-    File ingestion (PDF-first) with lightweight metadata extraction for SuperScan.
-    Does not perform deep chunking; stores sparse info for ontology proposal hints.
+    A service for managing file records in the database.
+
+    The `FileService` class provides methods for uploading, retrieving, and
+    listing file records. It is responsible for creating and managing the
+    metadata associated with each file, but it does not handle the actual
+    file storage.
     """
 
     def __init__(self, db):
+        """
+        Initializes the `FileService`.
+
+        Args:
+            db: A database connection object.
+        """
         self.db = db
 
     def upload_pdf(self, project_id: UUID, filename: str, size_bytes: int, pages: Optional[int], metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Store a file record in Snowflake via SQLModel. Real file storage is assumed
-        external or Snowflake stage (out of scope). This records the metadata row only.
+        Creates a new file record in the database.
+
+        This method creates a new `FileRecord` in the database with the
+        provided metadata. The actual file storage is assumed to be handled
+        externally.
+
+        Args:
+            project_id: The ID of the project the file belongs to.
+            filename: The name of the file.
+            size_bytes: The size of the file in bytes.
+            pages: The number of pages in the file.
+            metadata: A dictionary of additional metadata for the file.
+
+        Returns:
+            A dictionary representing the created file record.
         """
         from graph_rag.models import FileRecord
 
@@ -45,9 +73,17 @@ class FileService:
             }
 
     def get_file(self, file_id: UUID) -> Optional[Dict[str, Any]]:
-        """Get a file record by ID."""
+        """
+        Gets a file record by its ID.
+
+        Args:
+            file_id: The ID of the file to retrieve.
+
+        Returns:
+            A dictionary representing the file record, or `None` if not found.
+        """
         from graph_rag.models import FileRecord
-        
+
         with self.db.get_session() as session:
             file_row = session.get(FileRecord, file_id)
             if not file_row:
@@ -65,9 +101,20 @@ class FileService:
             }
 
     def list_files(self, project_id: UUID, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
-        """List files for a project."""
+        """
+        Lists the files for a project.
+
+        Args:
+            project_id: The ID of the project to list the files for.
+            limit: The maximum number of files to return.
+            offset: The number of files to skip.
+
+        Returns:
+            A dictionary containing a list of file records and the total
+            number of files.
+        """
         from graph_rag.models import FileRecord
-        
+
         with self.db.get_session() as session:
             q = session.query(FileRecord).filter(FileRecord.project_id == project_id)
             total = q.count()

@@ -1,9 +1,11 @@
 """
-Custom SQLAlchemy TypeDecorator for Snowflake VARIANT columns.
+Custom SQLAlchemy TypeDecorator for Snowflake's VARIANT data type.
 
-This type automatically serializes Python objects (dicts, lists, Pydantic models)
-to JSON when storing in Snowflake VARIANT columns, and deserializes them back
-when reading from the database.
+This module provides a `VariantType` that automatically handles the
+serialization and deserialization of Python objects to and from JSON when
+interacting with Snowflake's `VARIANT` columns. This allows for storing
+semi-structured data like dictionaries, lists, and Pydantic models in a
+Snowflake database.
 """
 
 import json
@@ -15,72 +17,84 @@ from snowflake.sqlalchemy import VARIANT
 
 class VariantType(TypeDecorator):
     """
-    TypeDecorator for Snowflake VARIANT columns with automatic JSON serialization.
-    
-    This type handles:
-    - Dictionaries
-    - Lists
-    - Pydantic models (via model_dump())
-    - SQLModel instances
-    - Primitive types (strings, numbers, booleans, None)
-    
+    A custom SQLAlchemy `TypeDecorator` for Snowflake's `VARIANT` data type.
+
+    This class automatically serializes Python objects (e.g., dicts, lists,
+    Pydantic models) to JSON strings when writing to the database, and
+    deserializes them back to Python objects when reading from the database.
+
+    It also handles a Snowflake-specific issue where `INSERT ... VALUES`
+    statements cannot contain expressions like `PARSE_JSON`. It does this by
+    wrapping the bind value with `PARSE_JSON` in the `bind_expression` method,
+    which is then handled by the event listener in the `connection` module.
+
     Usage:
         from graph_rag.db.variant_type import VariantType
-        
+
         class MyModel(SQLModel, table=True):
             data: Dict[str, Any] = Field(sa_column=Column(VariantType))
     """
-    
+
     impl = VARIANT
     cache_ok = True
-    
+
     def bind_expression(self, bindvalue):
         """
-        Wrap bind values with PARSE_JSON for Snowflake VARIANT columns.
-        
-        This ensures that JSON strings are properly parsed by Snowflake.
+        Wraps the bind value with `PARSE_JSON` for Snowflake `VARIANT` columns.
+
+        This ensures that the JSON string is properly parsed by Snowflake as a
+        `VARIANT` data type.
+
+        Args:
+            bindvalue: The bind value to wrap.
+
+        Returns:
+            A `sqlalchemy.sql.functions.Function` object that represents the
+            `PARSE_JSON` function call.
         """
         return func.PARSE_JSON(bindvalue)
-    
+
     def process_bind_param(self, value: Any, dialect) -> Any:
         """
-        Convert Python object to JSON string for Snowflake VARIANT.
-        
-        Snowflake connector does NOT support binding dict/list types directly.
-        We must serialize to JSON strings.
-        
+        Converts a Python object to a JSON string for the `VARIANT` column.
+
+        The Snowflake connector does not support binding Python dicts or lists
+        directly, so they must be serialized to JSON strings.
+
         Args:
-            value: Python object to serialize
-            dialect: SQLAlchemy dialect
-            
+            value: The Python object to serialize.
+            dialect: The SQLAlchemy dialect.
+
         Returns:
-            JSON string or None
+            A JSON string representation of the value, or `None` if the value
+            is `None`.
         """
         if value is None:
             return None
-        
+
         # Handle Pydantic/SQLModel objects - convert to dict first
         if hasattr(value, 'model_dump'):
             value = value.model_dump()
-        
+
         # Serialize to JSON string
         # Snowflake connector requires JSON strings for VARIANT columns
         return json.dumps(value)
-    
+
     def process_result_value(self, value: Any, dialect) -> Any:
         """
-        Convert JSON string from Snowflake VARIANT back to Python object.
-        
+        Converts a JSON string from the `VARIANT` column back to a Python object.
+
         Args:
-            value: Value from database
-            dialect: SQLAlchemy dialect
-            
+            value: The value from the database.
+            dialect: The SQLAlchemy dialect.
+
         Returns:
-            Deserialized Python object
+            The deserialized Python object, or the original value if it's not
+            a valid JSON string.
         """
         if value is None:
             return None
-        
+
         # Snowflake may return the value as a string or already parsed
         if isinstance(value, str):
             try:
@@ -88,6 +102,6 @@ class VariantType(TypeDecorator):
             except json.JSONDecodeError:
                 # If it's not valid JSON, return as-is
                 return value
-        
+
         # Already deserialized by Snowflake connector
         return value

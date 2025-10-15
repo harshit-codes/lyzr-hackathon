@@ -1,10 +1,6 @@
 """
-Chunking Service for SuperKB
-
-Orchestrates document chunking and storage in Snowflake.
-
-STRATEGY: Single recursive character splitting strategy for hackathon demo.
-Uses simple, effective chunking without over-engineering.
+This module provides the `ChunkingService` class, which is responsible for
+splitting documents into smaller text chunks.
 """
 
 from typing import Dict, List, Optional
@@ -19,17 +15,24 @@ from graph_rag.models.file_record import FileRecord
 
 
 class ChunkingService:
-    """Service for chunking documents and storing chunks."""
-    
+    """
+    A service for splitting documents into smaller text chunks.
+
+    The `ChunkingService` uses a recursive character splitting strategy to
+    split documents into smaller, more manageable chunks. These chunks are then
+    stored in the database and used for entity extraction and embedding
+    generation.
+    """
+
     def __init__(self, db: Session):
         """
-        Initialize chunking service.
-        
+        Initializes the `ChunkingService`.
+
         Args:
-            db: Database session
+            db: A database session object.
         """
         self.db = db
-    
+
     def chunk_document(
         self,
         file_id: UUID,
@@ -37,32 +40,32 @@ class ChunkingService:
         chunk_overlap: int = 50
     ) -> List[Dict]:
         """
-        Chunk a document using recursive character splitting.
-        
-        Single strategy for demo - simple and effective.
-        
+        Splits a document into chunks using a recursive character splitting
+        strategy.
+
         Args:
-            file_id: File ID to chunk
-            chunk_size: Maximum chunk size in characters (default: 512)
-            chunk_overlap: Overlap between chunks (default: 50)
-            
+            file_id: The ID of the file to chunk.
+            chunk_size: The maximum size of each chunk in characters.
+            chunk_overlap: The number of characters to overlap between chunks.
+
         Returns:
-            List of created chunk dictionaries
-            
+            A list of dictionaries, where each dictionary represents a
+            created chunk.
+
         Raises:
-            ValueError: If file not found
+            ValueError: If the file is not found.
         """
         # Get file record
         file_record = self.db.get(FileRecord, file_id)
         if not file_record:
             raise ValueError(f"File not found: {file_id}")
-        
+
         # Extract text from file
         text = self._extract_text_from_file(file_record)
-        
+
         # Split into chunks using simple recursive splitting
         text_chunks = self._split_text(text, chunk_size, chunk_overlap)
-        
+
         # Create chunk records
         # Insert one at a time to avoid Snowflake executemany issues with VARIANT columns
         result = []
@@ -74,7 +77,7 @@ class ChunkingService:
                 "chunk_size": chunk_size,
                 "overlap": chunk_overlap
             }
-            
+
             chunk = Chunk(
                 file_id=file_id,
                 chunk_index=chunk_index,
@@ -84,155 +87,158 @@ class ChunkingService:
                 chunk_metadata=chunk_metadata,
                 embedding=None  # Generated later by embedding service
             )
-            
+
             self.db.add(chunk)
             self.db.commit()  # Commit each chunk individually
             self.db.refresh(chunk)
             result.append(chunk.to_dict())
-        
+
         return result
-    
+
     def get_chunks(self, file_id: UUID) -> List[Dict]:
         """
-        Get all chunks for a file.
-        
+        Gets all the chunks for a file.
+
         Args:
-            file_id: File ID
-            
+            file_id: The ID of the file.
+
         Returns:
-            List of chunk dictionaries
+            A list of dictionaries, where each dictionary represents a chunk.
         """
         statement = select(Chunk).where(Chunk.file_id == file_id).order_by(Chunk.chunk_index)
         chunks = self.db.exec(statement).all()
         return [chunk.to_dict() for chunk in chunks]
-    
+
     def get_chunk(self, chunk_id: UUID) -> Optional[Dict]:
         """
-        Get a single chunk by ID.
-        
+        Gets a single chunk by its ID.
+
         Args:
-            chunk_id: Chunk ID
-            
+            chunk_id: The ID of the chunk to retrieve.
+
         Returns:
-            Chunk dictionary or None if not found
+            A dictionary representing the chunk, or `None` if not found.
         """
         chunk = self.db.get(Chunk, chunk_id)
         return chunk.to_dict() if chunk else None
-    
+
     def count_chunks(self, file_id: UUID) -> int:
         """
-        Count chunks for a file.
-        
+        Counts the number of chunks for a file.
+
         Args:
-            file_id: File ID
-            
+            file_id: The ID of the file.
+
         Returns:
-            Number of chunks
+            The number of chunks for the file.
         """
         statement = select(Chunk).where(Chunk.file_id == file_id)
         chunks = self.db.exec(statement).all()
         return len(chunks)
-    
+
     def delete_chunks(self, file_id: UUID) -> int:
         """
-        Delete all chunks for a file.
-        
+        Deletes all the chunks for a file.
+
         Args:
-            file_id: File ID
-            
+            file_id: The ID of the file.
+
         Returns:
-            Number of chunks deleted
+            The number of chunks that were deleted.
         """
         statement = select(Chunk).where(Chunk.file_id == file_id)
         chunks = self.db.exec(statement).all()
-        
+
         count = 0
         for chunk in chunks:
             self.db.delete(chunk)
             count += 1
-        
+
         self.db.commit()
         return count
-    
+
     def _extract_text_from_file(self, file_record: FileRecord) -> str:
         """
-        Extract text from file record.
-        
-        For now, returns mock text. In production, would:
-        1. Locate actual file on disk/storage
-        2. Use appropriate parser (PDF, DOCX, etc.)
-        3. Extract and return full text
-        
+        Extracts the text from a file record.
+
+        For the purpose of this demo, this method returns mock text. In a
+        production environment, this method would locate the actual file on
+        disk or in a storage service, use the appropriate parser (e.g., for
+        PDFs or DOCX files), and then extract and return the full text.
+
         Args:
-            file_record: File record
-            
+            file_record: The file record to extract the text from.
+
         Returns:
-            Extracted text
+            The extracted text.
         """
         # Mock text for demonstration
         # In production, you would:
         # - Get file path from file_record or storage
         # - Use PDFParser or other parser
         # - Return actual extracted text
-        
+
         mock_text = f"""
         {file_record.filename} - Research Paper on Knowledge Graphs
-        
+
         Abstract:
         This paper presents a novel approach to knowledge graph construction using
         multimodal database architectures. We demonstrate how relational, graph, and
         vector databases can be unified through a single schema definition.
-        
+
         Introduction:
         Knowledge graphs have become essential for modern information retrieval systems.
         However, traditional approaches struggle with multimodal data representation.
-        
+
         Methods:
         We propose a three-tier architecture:
         1. Relational layer for structured data
-        2. Graph layer for relationship traversal  
+        2. Graph layer for relationship traversal
         3. Vector layer for semantic search
-        
+
         The system uses schema-guided extraction to identify entities and relationships
         automatically from source documents.
-        
+
         Results:
         Our experiments show significant improvements in retrieval accuracy and speed
         compared to traditional single-database approaches.
-        
+
         Conclusion:
         Multimodal knowledge graphs represent the future of information retrieval,
         combining the strengths of multiple database paradigms.
-        
+
         Authors:
         Dr. Jane Smith (MIT), Prof. John Doe (Stanford), Dr. Alice Johnson (Berkeley)
-        
+
         Organizations:
         Massachusetts Institute of Technology, Stanford University, UC Berkeley
-        
+
         The authors are affiliated with leading research institutions and have 
         collaborated on this work as part of a multi-year research project.
         """
         
         return mock_text.strip()
-    
+
     def _split_text(self, text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
         """
-        Split text into chunks using recursive character splitting.
-        
-        Simple and effective strategy:
-        1. Try to split on paragraph boundaries (\n\n)
-        2. If chunks too large, split on sentence boundaries (.!?)
-        3. If still too large, split on words
-        4. Add overlap between chunks
-        
+        Splits text into chunks using a recursive character splitting strategy.
+
+        This method uses a simple and effective strategy for splitting text:
+
+        1.  It tries to split the text on paragraph boundaries (`\n\n`).
+        2.  If the resulting chunks are too large, it splits them on sentence
+            boundaries (`.`, `!`, `?`).
+        3.  If the chunks are still too large, it splits them on words.
+        4.  It adds an overlap between the chunks to ensure that no
+            information is lost.
+
         Args:
-            text: Text to split
-            chunk_size: Maximum chunk size
-            chunk_overlap: Overlap between chunks
-            
+            text: The text to split.
+            chunk_size: The maximum size of each chunk.
+            chunk_overlap: The overlap between chunks.
+
         Returns:
-            List of text chunks
+            A list of text chunks.
         """
         if not text or chunk_size <= 0:
             return []

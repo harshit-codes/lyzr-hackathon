@@ -1,402 +1,194 @@
+
 # Architecture
 
-## Data Model Overview
+This document provides a detailed overview of the architecture of the Agentic
+Graph RAG system.
+
+## High-Level Architecture
+
+The system is designed as a modular, multi-component platform that transforms
+unstructured documents into a queryable knowledge graph. The three main
+components are SuperScan, SuperKB, and SuperChat.
+
+The following diagram illustrates the high-level architecture of the system:
 
 ```
-┌─────────────┐
-│   Project   │  Multi-tenant container
-└──────┬──────┘
-       │ 1:N
-       ├─────────┬─────────┬──────────┐
-       │         │         │          │
-   ┌───▼───┐ ┌──▼───┐ ┌───▼────┐ ┌──▼───┐
-   │Schema │ │ Node │ │  Edge  │ │Stats │
-   └───┬───┘ └──┬───┘ └───┬────┘ └──────┘
-       │        │          │
-       │        │FK        │FK
-       └────────┼──────────┘
-                │
-         start_node, end_node
+┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
+│        SuperScan          │      │         SuperKB           │      │         SuperChat         │
+│    (Schema Creation)      │      │    (KB Construction)      │      │    (Conversational AI)    │
+├───────────────────────────┤      ├───────────────────────────┤      ├───────────────────────────┤
+│ - PDFParser               │      │ - SuperKBOrchestrator     │      │ - AgentOrchestrator       │
+│ - FastScan                │      │ - ChunkingService         │      │ - IntentClassifier      │
+│ - ProposalService         │      │ - EntityExtractionService │      │ - ContextManager          │
+│ - SchemaService           │      │ - EmbeddingService        │      │ - RelationalTool          │
+│                           │      │ - Neo4jExportService      │      │ - GraphTool               │
+│                           │      │ - SyncOrchestrator        │      │ - VectorTool              │
+└─────────────┬─────────────┘      └─────────────┬─────────────┘      └─────────────┬─────────────┘
+              │                                  │                                  │
+              ▼                                  ▼                                  ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                                  Knowledge Graph                                  │
+│                                                                                     │
+│ ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐ │
+│ │        Snowflake        │ │          Neo4j          │ │      Vector Store       │ │
+│ │      (Relational)       │ │         (Graph)         │ │       (Semantic)        │ │
+│ └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘ │
+└───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Entities
+## Data Flow
+
+The end-to-end data flow is as follows:
+
+1.  **Document Ingestion**: A user uploads a PDF document.
+
+2.  **Schema Creation (SuperScan)**:
+    -   The `PDFParser` extracts text snippets from the document.
+    -   The `FastScan` component uses these snippets to generate an ontology
+        proposal with candidate nodes and edges using an LLM.
+    -   The `ProposalService` saves this proposal to the database.
+    -   A user can then review and refine the proposal.
+    -   Once the proposal is finalized, the `SchemaService` creates the
+        actual `Schema` records in the database.
+
+3.  **Knowledge Base Construction (SuperKB)**:
+    -   The `ChunkingService` splits the document into smaller text chunks.
+    -   The `EntityExtractionService` extracts entities from the chunks.
+    -   The `SuperKBOrchestrator` creates `Node` and `Edge` objects in the
+        database based on the extracted entities.
+    -   The `EmbeddingService` generates vector embeddings for the chunks and
+        nodes.
+    -   The `SyncOrchestrator` synchronizes the knowledge graph with Neo4j.
+
+4.  **Conversational AI (SuperChat)**:
+    -   A user asks a natural language query.
+    -   The `IntentClassifier` determines the user's intent.
+    -   The `ContextManager` resolves any references to previous turns in the
+        conversation.
+    -   The `AgentOrchestrator` selects and executes the appropriate tools
+        (`RelationalTool`, `GraphTool`, or `VectorTool`).
+    -   The results from the tools are used to generate a natural language
+        response, complete with citations.
+
+## Data Models
+
+The core data models of the system are designed to be flexible and extensible,
+and they are built using `sqlmodel` for robust data validation and database
+mapping.
+
+The following diagram illustrates the relationships between the core data
+models:
+
+```
+┌───────────┐       ┌──────────┐
+│  Project  │──────>│  Schema  │
+└───────────┘       └────┬─────┘
+                         │
+           ┌─────────────┴─────────────┐
+           │                             │
+           ▼                             ▼
+      ┌────────┐                    ┌────────┐
+      │  Node  │                    │  Edge  │
+      └────┬───┘                    └────┬───┘
+           │                             │
+           └─────────────┬─────────────┘
+                         │
+                         ▼
+                  ┌───────────┐
+                  │ Snowflake │
+                  └───────────┘
+```
 
 ### 1. Project
 
-**Purpose**: Multi-tenant isolation and configuration container
+A `Project` is the top-level container for a knowledge graph. It provides
+multi-tenant isolation and project-level configuration.
 
-**Key Fields**:
-```python
-project_id: UUID (PK)
-project_name: str (unique, validated)
-status: ProjectStatus (ACTIVE | ARCHIVED | DELETED)
-config: ProjectConfig (JSON)
-  ├─ default_embedding_model
-  ├─ chunk_size, chunk_overlap
-  ├─ enable_auto_embedding
-  └─ entity_similarity_threshold
-stats: ProjectStats (JSON)
-  ├─ schema_count, node_count, edge_count
-  └─ last_updated
-tags: List[str]
-```
-
-**Relationships**:
-- `schemas`: One-to-many → Schema
-- `nodes`: One-to-many → Node  
-- `edges`: One-to-many → Edge
-- **Cascade delete**: Deleting project removes all children
-
----
+| Field          | Type         | Description                                      |
+| -------------- | ------------ | ------------------------------------------------ |
+| `project_id`   | `UUID`       | The unique identifier for the project.           |
+| `project_name` | `str`        | The unique, human-readable name for the project. |
+| `config`       | `dict`       | Project-level configuration settings.            |
+| `stats`        | `dict`       | Project statistics.                              |
 
 ### 2. Schema
 
-**Purpose**: Define entity structure with versioning
+A `Schema` defines the structure for nodes and edges. It is versioned to
+allow for schema evolution over time.
 
-**Key Fields**:
-```python
-schema_id: UUID (PK)
-schema_name: str (e.g., "Person", "WORKS_AT")
-entity_type: EntityType (NODE | EDGE)
-version: str (semantic: "1.0.0")
-is_active: bool
-project_id: UUID (FK)
-
-structured_attributes: List[AttributeDefinition]
-  ├─ name: str
-  ├─ data_type: AttributeDataType
-  ├─ required: bool
-  ├─ constraints: {min, max, pattern, enum, ...}
-  └─ default: Any
-
-unstructured_config: UnstructuredDataConfig
-  ├─ chunk_size: int
-  ├─ chunk_overlap: int
-  └─ enable_chunking: bool
-
-vector_config: VectorConfig
-  ├─ dimension: int
-  ├─ precision: str
-  └─ embedding_model: str
-```
-
-**Versioning Rules**:
-- **Major** (X.0.0): Breaking changes (incompatible schemas)
-- **Minor** (1.X.0): Backward compatible (add optional fields)
-- **Patch** (1.0.X): Bug fixes (no schema changes)
-
-**Example**:
-```python
-# v1.0.0
-{"name": {"type": "string", "required": True}}
-
-# v1.1.0 - Backward compatible
-{"name": {"type": "string", "required": True},
- "email": {"type": "string"}}  # Optional!
-
-# v2.0.0 - Breaking
-{"full_name": {"type": "string", "required": True}}  # Renamed!
-```
-
----
+| Field                   | Type         | Description                                      |
+| ----------------------- | ------------ | ------------------------------------------------ |
+| `schema_id`             | `UUID`       | The unique identifier for the schema.            |
+| `schema_name`           | `str`        | The name of the schema (e.g., 'Person').         |
+| `entity_type`           | `EntityType` | Whether this schema is for a `Node` or an `Edge`. |
+| `version`               | `str`        | The semantic version of the schema.              |
+| `structured_attributes` | `list`       | A list of definitions for the structured         |
+|                         |              | attributes of the entity.                        |
 
 ### 3. Node
 
-**Purpose**: Represent graph entities with multimodal data
+A `Node` represents an entity in the knowledge graph, such as a person,
+place, or concept.
 
-**Key Fields**:
-```python
-node_id: UUID (PK)
-node_name: str
-entity_type: str (from schema)
-schema_id: UUID (FK)
-project_id: UUID (FK)
-
-structured_data: Dict[str, Any]  # Validated against schema
-unstructured_data: List[UnstructuredBlob]
-  ├─ blob_id: str
-  ├─ content: str
-  ├─ content_type: str
-  ├─ chunks: List[ChunkMetadata]
-  │   ├─ chunk_id, start_offset, end_offset
-  │   └─ chunk_size
-  └─ language: str
-
-vector: Optional[List[float]]
-vector_model: Optional[str]
-
-node_metadata: NodeMetadata
-  ├─ source_document_id
-  ├─ extraction_method
-  ├─ confidence_score
-  ├─ tags
-  └─ custom_metadata
-```
-
-**Methods**:
-```python
-get_all_text_content() → str
-add_blob(blob: UnstructuredBlob)
-update_blob(blob_id: str, content: str)
-set_structured_attribute(key: str, value: Any)
-update_vector(vector: List[float], model: str)
-```
-
----
+| Field               | Type         | Description                                      |
+| ------------------- | ------------ | ------------------------------------------------ |
+| `node_id`           | `UUID`       | The unique identifier for the node.              |
+| `node_name`         | `str`        | The human-readable name or label for the node.   |
+| `entity_type`       | `str`        | The type of the entity.                          |
+| `schema_id`         | `UUID`       | The ID of the schema this node conforms to.      |
+| `structured_data`   | `dict`       | A dictionary of structured attributes for the    |
+|                     |              | node.                                            |
+| `unstructured_data` | `list`       | A list of unstructured text blobs associated with|
+|                     |              | the node.                                        |
+| `vector`            | `list`       | The vector embedding of the node's content.      |
 
 ### 4. Edge
 
-**Purpose**: Represent directed/bidirectional relationships
+An `Edge` represents a relationship between two nodes.
 
-**Key Fields**:
-```python
-edge_id: UUID (PK)
-edge_name: str
-relationship_type: str (UPPER_CASE, e.g., "WORKS_AT")
-schema_id: UUID (FK)
-project_id: UUID (FK)
+| Field               | Type            | Description                                      |
+| ------------------- | --------------- | ------------------------------------------------ |
+| `edge_id`           | `UUID`          | The unique identifier for the edge.              |
+| `edge_name`         | `str`           | The human-readable name for the edge.            |
+| `relationship_type` | `str`           | The type of the relationship.                    |
+| `schema_id`         | `UUID`          | The ID of the schema this edge conforms to.      |
+| `start_node_id`     | `UUID`          | The ID of the source node of the relationship.   |
+| `end_node_id`       | `UUID`          | The ID of the target node of the relationship.   |
+| `direction`         | `EdgeDirection` | The direction of the edge.                       |
 
-start_node_id: UUID (FK → nodes)
-end_node_id: UUID (FK → nodes)
-direction: EdgeDirection (DIRECTED | BIDIRECTIONAL | UNDIRECTED)
+## Multi-Database Strategy
 
-structured_data: Dict[str, Any]
-unstructured_data: List[UnstructuredBlob]
-vector: Optional[List[float]]
+The system uses a multi-database architecture to leverage the strengths of
+different database technologies:
 
-edge_metadata: EdgeMetadata
-  ├─ weight: float (for algorithms)
-  ├─ confidence_score
-  └─ tags
-```
+- **Snowflake**: The primary data store for all structured and unstructured
+  data. It is used as the single source of truth because of its ability to
+  handle semi-structured data with the `VARIANT` data type, its powerful
+  querying capabilities, and its scalability.
 
-**Methods**:
-```python
-is_self_loop() → bool
-reverse() → Edge  # Create reversed copy
-```
+- **Neo4j**: A graph database used for graph traversal and relationship
+  queries. The data in Neo4j is a synchronized copy of the data in
+  Snowflake. Neo4j is used for its ability to efficiently query complex
+  relationships and for its powerful graph visualization capabilities.
 
-**Relationship Type Naming**:
-- Always **UPPER_CASE** (Neo4j convention)
-- Use underscores: `WORKS_AT`, `AUTHORED`, `KNOWS`
-- Validates with: `validate_relationship_type()`
+- **Vector Store**: A vector store (e.g., Pinecone, FAISS) is used for
+  storing and searching vector embeddings for semantic search. This allows
+  for fast and efficient similarity searches over the entire knowledge
+  graph.
 
----
+## Code Structure
 
-## Validation System
+The codebase is organized into the following directories:
 
-### 1. StructuredDataValidator
-
-**Validates**: Node/Edge structured_data against schema
-
-```python
-# Type checking + coercion
-{"age": "30"} → {"age": 30}
-
-# Constraint validation
-{"age": 150} → Error (max: 120)
-
-# Required fields
-{"name": "Alice"} → OK
-{} → Error (name required)
-
-# Pattern matching
-{"email": "invalid"} → Error
-{"email": "alice@example.com"} → OK
-```
-
-### 2. UnstructuredDataValidator
-
-**Validates**: Blob format and chunk metadata
-
-```python
-# Blob structure
-{
-  "blob_id": "bio",
-  "content": "...",
-  "chunks": [
-    {"chunk_id": "chunk_0", "start_offset": 0, "end_offset": 512}
-  ]
-}
-
-# Checks:
-- blob_id uniqueness
-- chunk offsets consistency
-- chunk_size matches (end - start)
-```
-
-### 3. VectorValidator
-
-**Validates**: Embedding dimensions and types
-
-```python
-vector_config = {"dimension": 1536}
-
-# Valid
-validate_vector([0.1, 0.2, ...], expected_dimension=1536) → OK
-
-# Invalid
-validate_vector([0.1], expected_dimension=1536) → Error
-validate_vector([0.1, "string"], ...) → Error (non-numeric)
-```
-
-### 4. SchemaVersionValidator
-
-**Validates**: Semantic version compatibility
-
-```python
-is_compatible("1.0.0", "1.1.0") → True  (minor bump OK)
-is_compatible("1.0.0", "2.0.0") → False (major bump breaking)
-is_compatible("1.1.0", "1.0.0") → False (can't downgrade)
-```
-
----
-
-## Database Layer
-
-### Connection Management
-
-```python
-class DatabaseConnection:
-    def __init__(self):
-        self.config = DatabaseConfig()  # From .env
-        self.engine = create_engine(
-            connection_string,
-            pool_size=5,
-            max_overflow=10,
-            pool_recycle=3600,
-            pool_pre_ping=True  # Test before use
-        )
-    
-    @contextmanager
-    def get_session(self):
-        session = Session(self.engine)
-        try:
-            yield session
-            session.commit()
-        except:
-            session.rollback()
-            raise
-        finally:
-            session.close()
-```
-
-**Features**:
-- ✅ Connection pooling (5 connections)
-- ✅ Automatic retry with exponential backoff
-- ✅ Session lifecycle management
-- ✅ Transaction handling
-
-### Snowflake Integration
-
-```python
-# Connection string format
-snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}
-
-# JSON storage (VARIANT type)
-structured_data: Dict → VARIANT column
-unstructured_data: List[Blob] → VARIANT column
-vector: List[float] → VARIANT column
-
-# Benefits:
-- Schema-less storage (flexibility)
-- SQL querying on JSON
-- Automatic type coercion
-```
-
----
-
-## Export Patterns (Future)
-
-### To PostgreSQL
-
-```sql
--- Structured data becomes columns
-CREATE TABLE authors (
-    node_id UUID PRIMARY KEY,
-    name VARCHAR,
-    h_index INTEGER,
-    created_at TIMESTAMP
-);
-```
-
-### To Neo4j
-
-```cypher
-// Node export
-CREATE (a:Author {
-    node_id: "uuid",
-    name: "Alice",
-    h_index: 42
-})
-
-// Edge export
-MATCH (a:Author), (p:Paper)
-WHERE a.node_id = "..." AND p.node_id = "..."
-CREATE (a)-[:AUTHORED {since: 2020}]->(p)
-```
-
-### To Pinecone
-
-```python
-# Vector export
-{
-    "id": node_id,
-    "values": vector,  # [0.1, 0.2, ...]
-    "metadata": {
-        "node_name": "Alice",
-        "entity_type": "Author",
-        **structured_data
-    }
-}
-```
-
----
-
-## Design Patterns
-
-### 1. Multi-Tenant Isolation
-
-```python
-# All queries filter by project_id
-nodes = session.query(Node).filter(
-    Node.project_id == project_id
-).all()
-```
-
-### 2. Schema-Driven Validation
-
-```python
-# Before save
-validator.validate_structured_data(
-    data, 
-    schema.structured_data_schema
-)
-```
-
-### 3. Chunk-Aware Embeddings
-
-```python
-# Track which chunks produced which vectors
-blob.chunks = [
-    ChunkMetadata(
-        chunk_id="chunk_0",
-        start_offset=0,
-        end_offset=512
-    )
-]
-```
-
-### 4. Cascading Deletes
-
-```python
-# Delete project → deletes schemas, nodes, edges
-Relationship(
-    back_populates="project",
-    cascade="all, delete-orphan"
-)
-```
-
----
-
-**Next**: [Implementation Details](implementation.md) | [Quick Start](quick-start.md)
+-   `code/graph_rag/`: The core of the project, containing the data models,
+    database connection, and validation logic.
+-   `code/superscan/`: The SuperScan component, responsible for document
+    ingestion and schema creation.
+-   `code/superkb/`: The SuperKB component, responsible for knowledge base
+    construction.
+-   `code/superchat/`: The SuperChat component, the conversational AI and
+    agentic retrieval system.
+-   `code/scripts/`: Various scripts for setting up and managing the
+    project.
+-   `docs/`: The source for the GitBook documentation.
+-   `notes/`: Internal development notes and archived documents.

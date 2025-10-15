@@ -6,16 +6,28 @@ python-dotenv==1.0.0
 # Database
 snowflake-sqlalchemy==1.5.1
 snowflake-connector-python==3.6.0
+neo4j==5.18.0
+
+# AI/ML
+transformers[agents]==4.40.0
+sentence-transformers==2.7.0
+openai==1.35.0
 
 # Testing
 pytest==7.4.3
 pytest-cov==4.1.0
 
-# Jupyter notebooks
+# Jupyter notebooks and UI
 jupyter==1.0.0
 ipykernel==6.27.1
+ipywidgets==8.1.2
+pyvis==0.3.2
 
-# Optional: For future phases
-# openai==1.6.1
-# langchain==0.1.0
-# faiss-cpu==1.7.4
+# CLI and formatting
+rich==13.7.1
+rich[jupyter]==13.7.1
+
+# Utilities
+numpy==1.24.3
+pandas==2.0.3
+networkx==3.1
