@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 
 from pydantic import field_validator
 from sqlmodel import Column, Field, SQLModel
-from snowflake.sqlalchemy import VARIANT
+from graph_rag.db import VariantType
 
 
 class FileRecord(SQLModel, table=True):
@@ -36,7 +36,7 @@ class FileRecord(SQLModel, table=True):
     status: str = Field(default="uploaded", description="uploaded|processing|ready|failed")
 
     # Arbitrary metadata (JSON) - renamed to avoid SQLAlchemy reserved name conflict
-    file_metadata: Dict[str, Any] = Field(sa_column=Column(VARIANT), default_factory=dict)
+    file_metadata: Dict[str, Any] = Field(sa_column=Column(VariantType), default_factory=dict)
 
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)

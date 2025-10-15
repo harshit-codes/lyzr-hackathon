@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Column, Field, SQLModel
-from snowflake.sqlalchemy import VARIANT
+from graph_rag.db import VariantType
 
 
 class OntologyProposal(SQLModel, table=True):
@@ -28,11 +28,11 @@ class OntologyProposal(SQLModel, table=True):
     summary: Optional[str] = Field(default=None)
 
     # Proposed structures (JSON blobs)
-    nodes: List[Dict[str, Any]] = Field(sa_column=Column(VARIANT), default_factory=list)
-    edges: List[Dict[str, Any]] = Field(sa_column=Column(VARIANT), default_factory=list)
+    nodes: List[Dict[str, Any]] = Field(sa_column=Column(VariantType), default_factory=list)
+    edges: List[Dict[str, Any]] = Field(sa_column=Column(VariantType), default_factory=list)
 
     # Source files that informed this proposal (UUIDs as strings)
-    source_files: List[str] = Field(sa_column=Column(VARIANT), default_factory=list)
+    source_files: List[str] = Field(sa_column=Column(VariantType), default_factory=list)
 
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -9,6 +9,7 @@ when reading from the database.
 import json
 from typing import Any, Optional
 from sqlalchemy.types import TypeDecorator
+from sqlalchemy.sql import func
 from snowflake.sqlalchemy import VARIANT
 
 
@@ -35,28 +36,28 @@ class VariantType(TypeDecorator):
     
     def process_bind_param(self, value: Any, dialect) -> Any:
         """
-        Convert Python object to appropriate format for Snowflake VARIANT.
+        Convert Python object to JSON string for Snowflake VARIANT.
         
-        Snowflake's VARIANT type can accept Python objects directly (dicts, lists)
-        and the Snowflake connector will handle the conversion.
+        Snowflake connector does NOT support binding dict/list types directly.
+        We must serialize to JSON strings.
         
         Args:
             value: Python object to serialize
             dialect: SQLAlchemy dialect
             
         Returns:
-            Python object (dict, list, etc.) or None if value is None
+            JSON string or None
         """
         if value is None:
             return None
         
-        # Handle Pydantic/SQLModel objects - convert to dict
+        # Handle Pydantic/SQLModel objects - convert to dict first
         if hasattr(value, 'model_dump'):
-            return value.model_dump()
+            value = value.model_dump()
         
-        # Return as-is for native Python types that Snowflake can handle
-        # The Snowflake connector will convert these to VARIANT
-        return value
+        # Serialize to JSON string
+        # Snowflake connector requires JSON strings for VARIANT columns
+        return json.dumps(value)
     
     def process_result_value(self, value: Any, dialect) -> Any:
         """

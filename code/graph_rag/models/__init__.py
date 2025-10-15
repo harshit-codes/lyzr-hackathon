@@ -25,6 +25,8 @@ from .edge import (
     EdgeQuery,
     TraversalPattern
 )
+from .file_record import FileRecord
+from .ontology_proposal import OntologyProposal
 
 __all__ = [
     # Project
@@ -51,4 +53,8 @@ __all__ = [
     "EdgeMetadata",
     "EdgeQuery",
     "TraversalPattern",
+    
+    # File & Ontology
+    "FileRecord",
+    "OntologyProposal",
 ]

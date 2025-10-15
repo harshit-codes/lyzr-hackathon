@@ -139,6 +139,7 @@ class DatabaseConnection:
             pool_pre_ping=True,  # Test connections before using
             connect_args={
                 "client_session_keep_alive": True,  # Keep Snowflake sessions alive
+                "supports_native_json": True,  # Enable native JSON/VARIANT support
             }
         )
         
@@ -157,6 +158,57 @@ class DatabaseConnection:
             """Handle new connections."""
             # Set session parameters if needed
             pass
+        
+        @event.listens_for(self.engine, "before_cursor_execute", retval=True)
+        def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+            """Rewrite INSERT ... VALUES to INSERT ... SELECT for VARIANT columns.
+            
+            Snowflake doesn't allow expressions like PARSE_JSON in VALUES clause,
+            so we rewrite to use SELECT with PARSE_JSON instead.
+            """
+            # Only process INSERT statements with VARIANT columns
+            if statement.strip().upper().startswith("INSERT") and isinstance(parameters, dict):
+                # List of known VARIANT column names across all tables
+                variant_cols = [
+                    'config', 'stats', 'tags', 'custom_metadata',  # Project columns
+                    'structured_data', 'unstructured_data', 'vector', 'node_metadata',  # Node columns
+                    'properties', 'edge_metadata',  # Edge columns
+                    'structured_attributes', 'unstructured_config', 'vector_config', 'sample_data',  # Schema columns
+                    'file_metadata',  # FileRecord columns
+                    'nodes', 'edges', 'source_files',  # OntologyProposal columns
+                ]
+                
+                # Check if any VARIANT columns are present
+                has_variant = any(col in parameters and isinstance(parameters[col], str) 
+                                 for col in variant_cols)
+                
+                if has_variant and " VALUES " in statement.upper():
+                    # Rewrite INSERT ... VALUES to INSERT ... SELECT
+                    # Example: INSERT INTO table (col1, col2) VALUES (%(col1)s, %(col2)s)
+                    # Becomes: INSERT INTO table (col1, col2) SELECT %(col1)s, PARSE_JSON(%(col2)s)
+                    
+                    # Extract table and columns
+                    values_idx = statement.upper().find(" VALUES ")
+                    insert_part = statement[:values_idx]  # INSERT INTO table (columns)
+                    
+                    # Get column list from INSERT statement
+                    cols_start = insert_part.rfind('(')
+                    cols_end = insert_part.rfind(')')
+                    cols_str = insert_part[cols_start+1:cols_end]
+                    cols = [c.strip() for c in cols_str.split(',')]
+                    
+                    # Build SELECT clause with PARSE_JSON for VARIANT columns
+                    select_items = []
+                    for col in cols:
+                        if col in variant_cols and col in parameters and isinstance(parameters[col], str):
+                            select_items.append(f"PARSE_JSON(%({col})s)")
+                        else:
+                            select_items.append(f"%({col})s")
+                    
+                    # Reconstruct as INSERT ... SELECT
+                    statement = f"{insert_part} SELECT {', '.join(select_items)}"
+            
+            return statement, parameters
         
         @event.listens_for(self.engine, "checkout")
         def receive_checkout(dbapi_conn, connection_record, connection_proxy):

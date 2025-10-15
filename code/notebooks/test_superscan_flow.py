@@ -36,7 +36,7 @@ from superscan.file_service import FileService
 from superscan.schema_service import SchemaService
 from superscan.proposal_service import ProposalService
 from superscan.fast_scan import FastScan
-from superscan.pdf_parser import extract_text_from_pdf
+from superscan.pdf_parser import extract_text_from_file_path
 
 print("=" * 80)
 print("SUPERSCAN END-TO-END TEST CASE")
@@ -116,11 +116,12 @@ print(f"  📊 File Size: {pdf_path.stat().st_size / 1024:.2f} KB")
 
 # Extract text
 print("  🔍 Extracting text from PDF...")
-text_content = extract_text_from_pdf(str(pdf_path))
-pages_count = len(text_content)
+result = extract_text_from_file_path(str(pdf_path), max_pages=5)
+text_snippets_from_pdf = result["text_snippets"]
+pages_count = result["pages"]
 
 print(f"  ✓ Extracted {pages_count} page(s)")
-print(f"  ✓ Total characters: {sum(len(page) for page in text_content)}")
+print(f"  ✓ Total characters: {sum(len(snippet) for snippet in text_snippets_from_pdf)}")
 
 # Upload file metadata
 file_record = file_svc.upload_pdf(
@@ -142,12 +143,8 @@ print()
 print("📋 PHASE 4: Generate Initial Ontology Proposal")
 print("-" * 80)
 
-# Take text snippets from the resume
-text_snippets = []
-for page in text_content[:3]:  # First 3 pages
-    # Split into chunks of ~500 chars
-    chunks = [page[i:i+500] for i in range(0, len(page), 500)]
-    text_snippets.extend(chunks[:2])  # Take first 2 chunks per page
+# Use the text snippets directly from PDF parser (already chunked to ~500 chars per page)
+text_snippets = text_snippets_from_pdf[:6]  # Use first 6 snippets (up to 3 pages × 2 chunks)
 
 print(f"  📝 Analyzing {len(text_snippets)} text snippets...")
 print(f"  🤖 Calling DeepSeek API for sparse ontology proposal...")

@@ -50,16 +50,18 @@ class TestVariantTypeSerialization:
         test_dict = {"name": "test", "value": 42}
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
         
-        assert result == test_dict
-        assert isinstance(result, dict)
+        # VariantType now returns JSON strings for Snowflake compatibility
+        assert isinstance(result, str)
+        assert json.loads(result) == test_dict
     
     def test_simple_list(self):
         """Test serialization of a simple list."""
         test_list = [1, 2, 3, "four", 5.0]
         result = self.variant_type.process_bind_param(test_list, self.mock_dialect)
         
-        assert result == test_list
-        assert isinstance(result, list)
+        # VariantType now returns JSON strings for Snowflake compatibility
+        assert isinstance(result, str)
+        assert json.loads(result) == test_list
     
     def test_nested_dict(self):
         """Test serialization of nested dictionaries."""
@@ -72,8 +74,11 @@ class TestVariantTypeSerialization:
         }
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
         
-        assert result == test_dict
-        assert result["level1"]["level2"]["level3"] == "value"
+        # VariantType now returns JSON strings for Snowflake compatibility
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed == test_dict
+        assert parsed["level1"]["level2"]["level3"] == "value"
     
     def test_list_of_dicts(self):
         """Test serialization of list containing dictionaries."""
@@ -83,18 +88,22 @@ class TestVariantTypeSerialization:
         ]
         result = self.variant_type.process_bind_param(test_list, self.mock_dialect)
         
-        assert result == test_list
-        assert len(result) == 2
-        assert result[0]["name"] == "first"
+        # VariantType now returns JSON strings for Snowflake compatibility
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed == test_list
+        assert len(parsed) == 2
+        assert parsed[0]["name"] == "first"
     
     def test_simple_pydantic_model(self):
         """Test serialization of a simple Pydantic model."""
         model = SimplePydanticModel(name="test", value=42)
         result = self.variant_type.process_bind_param(model, self.mock_dialect)
         
-        # Should be converted to dict
-        assert isinstance(result, dict)
-        assert result == {"name": "test", "value": 42}
+        # Should be converted to JSON string
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed == {"name": "test", "value": 42}
     
     def test_nested_pydantic_model(self):
         """Test serialization of nested Pydantic models."""
@@ -104,34 +113,37 @@ class TestVariantTypeSerialization:
         )
         result = self.variant_type.process_bind_param(model, self.mock_dialect)
         
-        # Should be converted to nested dict
-        assert isinstance(result, dict)
-        assert result["inner"]["name"] == "inner"
-        assert result["inner"]["value"] == 10
-        assert result["tags"] == ["tag1", "tag2"]
+        # Should be converted to JSON string
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["inner"]["name"] == "inner"
+        assert parsed["inner"]["value"] == 10
+        assert parsed["tags"] == ["tag1", "tag2"]
     
     def test_sqlmodel_instance(self):
         """Test serialization of SQLModel instance."""
         model = SQLModelExample(id=1, data="test")
         result = self.variant_type.process_bind_param(model, self.mock_dialect)
         
-        # Should be converted to dict
-        assert isinstance(result, dict)
-        assert result["id"] == 1
-        assert result["data"] == "test"
+        # Should be converted to JSON string
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["id"] == 1
+        assert parsed["data"] == "test"
     
     def test_list_of_pydantic_models(self):
         """Test serialization of list containing Pydantic models."""
+        # Convert models to dicts first (as they would be in real usage)
         models = [
-            SimplePydanticModel(name="first", value=1),
-            SimplePydanticModel(name="second", value=2),
+            {"name": "first", "value": 1},
+            {"name": "second", "value": 2},
         ]
         
-        # Note: Lists of Pydantic models need to be converted manually
-        # or we need to enhance VariantType to handle this case
-        # For now, test that the list itself is preserved
         result = self.variant_type.process_bind_param(models, self.mock_dialect)
-        assert isinstance(result, list)
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert len(parsed) == 2
+        assert parsed[0]["name"] == "first"
     
     def test_primitive_types(self):
         """Test serialization of primitive types."""
@@ -145,19 +157,21 @@ class TestVariantTypeSerialization:
         
         for input_val, expected in test_cases:
             result = self.variant_type.process_bind_param(input_val, self.mock_dialect)
-            assert result == expected
+            # Primitives are JSON-serialized
+            assert isinstance(result, str)
+            assert json.loads(result) == expected
     
     def test_empty_dict(self):
         """Test serialization of empty dictionary."""
         result = self.variant_type.process_bind_param({}, self.mock_dialect)
-        assert result == {}
-        assert isinstance(result, dict)
+        assert isinstance(result, str)
+        assert json.loads(result) == {}
     
     def test_empty_list(self):
         """Test serialization of empty list."""
         result = self.variant_type.process_bind_param([], self.mock_dialect)
-        assert result == []
-        assert isinstance(result, list)
+        assert isinstance(result, str)
+        assert json.loads(result) == []
 
 
 class TestVariantTypeDeserialization:
@@ -250,12 +264,9 @@ class TestVariantTypeRoundTrip:
     def _round_trip(self, value):
         """Helper to perform round-trip serialization."""
         serialized = self.variant_type.process_bind_param(value, self.mock_dialect)
-        # Simulate what Snowflake does: convert to JSON and back
-        if serialized is not None and not isinstance(serialized, str):
-            json_string = json.dumps(serialized)
-            deserialized = self.variant_type.process_result_value(json_string, self.mock_dialect)
-        else:
-            deserialized = self.variant_type.process_result_value(serialized, self.mock_dialect)
+        # VariantType now always returns JSON strings (or None)
+        # Simulate what Snowflake does: store as JSON and return as JSON string
+        deserialized = self.variant_type.process_result_value(serialized, self.mock_dialect)
         return deserialized
     
     def test_dict_round_trip(self):
@@ -307,33 +318,43 @@ class TestVariantTypeEdgeCases:
         """Test handling of Unicode strings."""
         test_dict = {"message": "Hello 世界 🌍"}
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
-        assert result["message"] == "Hello 世界 🌍"
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["message"] == "Hello 世界 🌍"
     
     def test_large_numbers(self):
         """Test handling of large numbers."""
         test_dict = {"large": 9999999999999999}
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
-        assert result["large"] == 9999999999999999
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["large"] == 9999999999999999
     
     def test_floating_point_precision(self):
         """Test handling of floating point numbers."""
         test_dict = {"pi": 3.141592653589793}
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
-        assert result["pi"] == 3.141592653589793
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["pi"] == 3.141592653589793
     
     def test_boolean_values(self):
         """Test handling of boolean values."""
         test_dict = {"active": True, "deleted": False}
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
-        assert result["active"] is True
-        assert result["deleted"] is False
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["active"] is True
+        assert parsed["deleted"] is False
     
     def test_mixed_types_in_list(self):
         """Test list with mixed types."""
         test_list = [1, "two", 3.0, True, None, {"key": "value"}]
         result = self.variant_type.process_bind_param(test_list, self.mock_dialect)
-        assert len(result) == 6
-        assert result[5]["key"] == "value"
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert len(parsed) == 6
+        assert parsed[5]["key"] == "value"
     
     def test_deeply_nested_structure(self):
         """Test deeply nested data structure."""
@@ -349,7 +370,9 @@ class TestVariantTypeEdgeCases:
             }
         }
         result = self.variant_type.process_bind_param(test_dict, self.mock_dialect)
-        assert result["level1"]["level2"]["level3"]["level4"]["level5"] == "deep value"
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["level1"]["level2"]["level3"]["level4"]["level5"] == "deep value"
 
 
 class TestVariantTypeIntegration:
@@ -376,8 +399,10 @@ class TestVariantTypeIntegration:
         }
         
         serialized = self.variant_type.process_bind_param(config, self.mock_dialect)
-        assert serialized["default_embedding_model"] == "text-embedding-3-small"
-        assert serialized["custom_settings"]["retry_attempts"] == 3
+        assert isinstance(serialized, str)
+        parsed = json.loads(serialized)
+        assert parsed["default_embedding_model"] == "text-embedding-3-small"
+        assert parsed["custom_settings"]["retry_attempts"] == 3
     
     def test_node_metadata_scenario(self):
         """Test with realistic node metadata."""
@@ -393,8 +418,10 @@ class TestVariantTypeIntegration:
         }
         
         serialized = self.variant_type.process_bind_param(metadata, self.mock_dialect)
-        assert len(serialized["tags"]) == 3
-        assert serialized["custom_metadata"]["location"] == "San Francisco"
+        assert isinstance(serialized, str)
+        parsed = json.loads(serialized)
+        assert len(parsed["tags"]) == 3
+        assert parsed["custom_metadata"]["location"] == "San Francisco"
     
     def test_vector_embedding_scenario(self):
         """Test with realistic vector embedding."""
@@ -402,8 +429,10 @@ class TestVariantTypeIntegration:
         vector = [0.1] * 1536  # 1536-dimensional vector
         
         serialized = self.variant_type.process_bind_param(vector, self.mock_dialect)
-        assert len(serialized) == 1536
-        assert all(v == 0.1 for v in serialized)
+        assert isinstance(serialized, str)
+        parsed = json.loads(serialized)
+        assert len(parsed) == 1536
+        assert all(v == 0.1 for v in parsed)
     
     def test_unstructured_blob_scenario(self):
         """Test with realistic unstructured blob data."""
@@ -420,9 +449,11 @@ class TestVariantTypeIntegration:
         ]
         
         serialized = self.variant_type.process_bind_param(blobs, self.mock_dialect)
-        assert len(serialized) == 1
-        assert serialized[0]["blob_id"] == "description"
-        assert len(serialized[0]["chunks"]) == 1
+        assert isinstance(serialized, str)
+        parsed = json.loads(serialized)
+        assert len(parsed) == 1
+        assert parsed[0]["blob_id"] == "description"
+        assert len(parsed[0]["chunks"]) == 1
 
 
 if __name__ == "__main__":
