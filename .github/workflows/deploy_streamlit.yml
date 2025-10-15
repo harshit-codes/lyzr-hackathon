@@ -13,43 +13,64 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Snowflake CLI
-        uses: snowflakedb/snowflake-cli-action@v2.0
-        with:
-          default-config-file-path: ~/.snowflake/config.toml
+            - name: Set up Python
 
-      - name: Debug Secrets
-        shell: bash
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        run: |
-          echo "SNOWFLAKE_ACCOUNT: $SNOWFLAKE_ACCOUNT"
-          echo "SNOWFLAKE_USER: $SNOWFLAKE_USER"
-          echo "SNOWFLAKE_PASSWORD: ***"
-          echo "SNOWFLAKE_WAREHOUSE: $SNOWFLAKE_WAREHOUSE"
+              uses: actions/setup-python@v5
 
-      - name: Create Snowflake CLI Config
-        shell: bash
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+              with:
+
+                python-version: '3.9'
+
+      
+
+            - name: Install Snowflake CLI
+
+              run: |
+
+                pip install --upgrade pip
+
+                pip install snowflake-cli
+
+      
+
+            - name: Create Snowflake CLI Config
+
+              shell: bash
+
+              env:
+
+                SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+
+                SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+
+                SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        run: |
-          mkdir -p ~/.snowflake
-          cat <<EOF > ~/.snowflake/config.toml
-          [connections]
-          [connections.default]
-          accountname = "$SNOWFLAKE_ACCOUNT"
-          username = "$SNOWFLAKE_USER"
-          password = "$SNOWFLAKE_PASSWORD"
-          warehouse = "$SNOWFLAKE_WAREHOUSE"
-          EOF
-          chmod 0600 ~/.snowflake/config.toml
+
+              run: |
+
+                mkdir -p ~/.snowflake
+
+                cat <<EOF > ~/.snowflake/config.toml
+
+                [connections]
+
+                [connections.default]
+
+                accountname = "$SNOWFLAKE_ACCOUNT"
+
+                username = "$SNOWFLAKE_USER"
+
+                password = "$SNOWFLAKE_PASSWORD"
+
+                warehouse = "$SNOWFLAKE_WAREHOUSE"
+
+                EOF
+
+                chmod 0600 ~/.snowflake/config.toml
 
       - name: Deploy Streamlit App
+        env:
+          SNOWSQL_CONFIG_PATH: ~/.snowflake/config.toml
         run: |
           snow streamlit deploy
