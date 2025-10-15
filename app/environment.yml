@@ -4,17 +4,17 @@ channels:
 dependencies:
   - python=3.9
   - streamlit
-  - sqlmodel==0.0.14
-  - pydantic==2.5.0
-  - python-dotenv==1.0.0
-  - snowflake-sqlalchemy==1.5.1
-  - snowflake-connector-python==3.6.0
-  - neo4j==5.18.0
-  - transformers[agents]==4.40.0
-  - sentence-transformers==2.7.0
-  - openai==1.35.0
-  - rich==13.7.1
-  - numpy==1.24.3
-  - pandas==2.0.3
-  - networkx==3.1
+  - sqlmodel=0.0.14
+  - pydantic=2.5.0
+  - python-dotenv=1.0.0
+  - snowflake-sqlalchemy=1.5.1
+  - snowflake-connector-python=3.6.0
+  - neo4j=5.18.0
+  - transformers[agents]=4.40.0
+  - sentence-transformers=2.7.0
+  - openai=1.35.0
+  - rich=13.7.1
+  - numpy=1.24.3
+  - pandas=2.0.3
+  - networkx=3.1
   - protobuf
