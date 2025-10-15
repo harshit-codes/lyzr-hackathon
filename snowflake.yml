@@ -1,0 +1,6 @@
+definition_version: 1
+
+streamlit:
+  name: SUPERSUITE_APP
+  main_file: snowflake_deployment/streamlit_app.py
+  query_warehouse: COMPUTE_WH
