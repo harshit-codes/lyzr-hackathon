@@ -55,6 +55,25 @@ For detailed setup instructions, see the [**Getting Started**](https://contactin
 
 ---
 
-## 🤝 Contributing
+## 🚀 Deployment
 
-We welcome contributions! Please see our [**Contributing Guide**](https://contactingharshit.gitbook.io/lyzr-hack/contributing) for more information.
+### CI/CD Pipeline
+
+This project includes automated deployment to Snowflake using GitHub Actions. The CI/CD pipeline automatically deploys the Streamlit application on every push to the main branch.
+
+**Pipeline Features:**
+- Automated testing and deployment
+- Secure credential management via GitHub secrets
+- File upload to Snowflake stages
+- Production deployment to Snowflake Streamlit
+
+**For detailed information about the CI/CD setup, challenges faced, and solutions implemented, see:**
+- [CI/CD Challenges and Solutions](docs/CI_CD_CHALLENGES.md)
+
+### Manual Deployment
+
+For manual deployment or troubleshooting, see the [Deployment Guide](https://contactingharshit.gitbook.io/lyzr-hack/deployment) in our documentation.
+
+---
+
+## 🤝 Contributing
