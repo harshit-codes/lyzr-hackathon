@@ -1,5 +1,7 @@
 definition_version: 1
 
+# Dummy change to trigger workflow for debugging
+
 streamlit:
   name: SUPERSUITE_APP
   main_file: app/streamlit_app.py
