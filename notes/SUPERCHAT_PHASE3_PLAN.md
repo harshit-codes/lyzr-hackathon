@@ -361,56 +361,87 @@ class IntentClassifier:
 
 ## 🎨 User Interface Design
 
-### Option 1: Streamlit Chat Interface (Recommended)
+### Jupyter Notebook Interface (Primary)
 
 **Features:**
-- Chat message history
-- Streaming responses
-- Reasoning step visualization
-- Interactive citations (clickable to view source)
-- Tool execution trace (expandable sections)
-- Graph visualization for graph queries
+- Interactive chat using ipywidgets
+- Markdown/HTML rendering for responses
+- Collapsible sections for reasoning steps
+- Inline graph visualization (networkx/pyvis)
+- Citation links (clickable Markdown)
+- Rich display for tool traces
+- Fast iteration and testing
 
-**Layout:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│  SuperChat - Agentic Knowledge Graph Assistant              │
-├─────────────────────────────────────────────────────────────┤
-│  Project: research_project_01                    [Settings]  │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [User Message]                                              │
-│  How are Alice Johnson and Stanford connected?               │
-│                                                              │
-│  [Assistant Response]                                        │
-│  Alice Johnson is connected to Stanford University through:  │
-│                                                              │
-│  📊 Reasoning Steps:                                         │
-│    1. ✓ Identified entities: Alice Johnson, Stanford        │
-│    2. ✓ Selected tool: Graph Traversal (Cypher)             │
-│    3. ✓ Executed query: MATCH path = ...                    │
-│    4. ✓ Found 1 path with 2 relationships                   │
-│                                                              │
-│  🔗 Path Found:                                              │
-│    (Alice Johnson) -[WORKS_AT]-> (Stanford University)       │
-│                                                              │
-│  📖 Citations:                                               │
-│    [1] Node: Alice Johnson (Person)                          │
-│    [2] Edge: WORKS_AT relationship                           │
-│    [3] Node: Stanford University (Organization)             │
-│                                                              │
-│  💬 Ask a follow-up question...                              │
-│  ┌────────────────────────────────────────────┐  [Send]     │
-│  │ Type your question here...                  │             │
-│  └────────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────┘
+**Implementation:**
+```python
+import ipywidgets as widgets
+from IPython.display import display, Markdown, HTML
+import pyvis
+
+# Chat interface
+query_input = widgets.Textarea(placeholder='Ask a question...')
+submit_btn = widgets.Button(description='Send')
+output_area = widgets.Output()
+
+# Display reasoning steps
+def show_reasoning(steps):
+    accordion = widgets.Accordion(children=[
+        widgets.HTML(f'<pre>{step}</pre>') for step in steps
+    ])
+    for i, step in enumerate(steps):
+        accordion.set_title(i, f'Step {i+1}')
+    display(accordion)
+
+# Display graph
+def show_graph(nodes, edges):
+    net = pyvis.network.Network(notebook=True)
+    for node in nodes:
+        net.add_node(node['id'], label=node['name'])
+    for edge in edges:
+        net.add_edge(edge['from'], edge['to'])
+    return net.show('graph.html')
 ```
 
-### Option 2: CLI Interface (Quick Demo)
+**Example Notebook Layout:**
+```markdown
+# SuperChat - Agentic Knowledge Graph Assistant
+
+## Query
+[Text input widget]
+
+## Response
+Alice Johnson is connected to Stanford University through:
+
+### 📊 Reasoning Steps
+[Collapsible accordion widget]
+  ▶ Step 1: Identified entities
+  ▶ Step 2: Selected tool: Graph Traversal
+  ▶ Step 3: Executed Cypher query
+  ▶ Step 4: Found path
+
+### 🔗 Path Visualization
+[Interactive pyvis graph]
+
+### 📖 Citations
+- [Node: Alice Johnson](link_to_snowflake_record)
+- [Edge: WORKS_AT](link_to_edge_record)
+- [Node: Stanford University](link_to_org_record)
+```
+
+**Benefits:**
+- ✅ Rapid iteration without server restart
+- ✅ Rich display capabilities (HTML, Markdown, plots)
+- ✅ Easy debugging with inline outputs
+- ✅ Cell-by-cell execution for testing
+- ✅ Jupyter's built-in state management
+- ✅ Great for demos and presentations
+
+### CLI Interface (Alternative)
 
 **Features:**
-- Terminal-based chat
+- Terminal-based chat using Rich library
 - Color-coded responses
+- ASCII graph visualization
 - JSON output mode for debugging
 - Tool trace logging
 
@@ -434,14 +465,19 @@ class IntentClassifier:
 - Sentence Transformers (existing embedding service)
 
 **UI:**
-- Streamlit (chat interface)
+- Jupyter Notebook (rapid prototyping and iteration)
 - Rich (CLI formatting)
+- IPython widgets (interactive UI in notebook)
+
+**Note:** Using Jupyter notebook for faster iteration during development. Streamlit can be added later for production deployment.
 
 ---
 
 ## 📋 Implementation Roadmap
 
-### **Sprint 1: Core Agent Infrastructure** (Day 1-2)
+### **Sprint 1: Core Agent Infrastructure**
+
+**Focus:** Foundation and basic agent primitives
 
 **Tasks:**
 1. ✅ Set up HF Smol Agents environment
@@ -454,35 +490,41 @@ class IntentClassifier:
 - `superchat/intent_classifier.py`
 - `superchat/context_manager.py`
 - `superchat/tools/base_tool.py`
+- `notebooks/superchat_sprint1_demo.ipynb` - Interactive testing
 
-**Tests:**
+**Tests (in notebook):**
 - Intent classification accuracy
 - Context resolution (anaphora)
 - Tool selection logic
 
 ---
 
-### **Sprint 2: Query Tools** (Day 2-3)
+### **Sprint 2: Query Tools**
+
+**Focus:** Build all three query tools
 
 **Tasks:**
 1. ✅ Implement Relational Tool (SQL generation)
 2. ✅ Implement Graph Tool (Cypher generation)
 3. ✅ Implement Vector Tool (semantic search)
-4. ✅ Test each tool independently
+4. ✅ Test each tool independently in notebook
 
 **Deliverables:**
 - `superchat/tools/relational_tool.py`
 - `superchat/tools/graph_tool.py`
 - `superchat/tools/vector_tool.py`
+- `notebooks/superchat_sprint2_tools.ipynb` - Tool testing & validation
 
-**Tests:**
-- SQL query correctness
-- Cypher query correctness
-- Vector search relevance
+**Tests (in notebook):**
+- SQL query correctness with real data
+- Cypher query correctness with Neo4j
+- Vector search relevance ranking
 
 ---
 
-### **Sprint 3: Agent Integration** (Day 3-4)
+### **Sprint 3: Agent Integration**
+
+**Focus:** Orchestration and multi-tool reasoning
 
 **Tasks:**
 1. ✅ Integrate tools with agent orchestrator
@@ -493,45 +535,71 @@ class IntentClassifier:
 **Deliverables:**
 - Complete `superchat/agent_orchestrator.py`
 - `superchat/response_generator.py`
+- `notebooks/superchat_sprint3_integration.ipynb` - E2E query testing
 
-**Tests:**
+**Tests (in notebook):**
 - End-to-end query execution
 - Multi-tool query handling
 - Citation accuracy
+- Reasoning transparency
 
 ---
 
-### **Sprint 4: User Interface** (Day 4-5)
+### **Sprint 4: Interactive Notebook Interface**
+
+**Focus:** Rich notebook UI for demos and testing
 
 **Tasks:**
-1. ✅ Build Streamlit chat interface
-2. ✅ Add reasoning visualization
-3. ✅ Implement citation display
-4. ✅ Add tool trace viewer
+1. ✅ Build interactive chat widget in notebook
+2. ✅ Add reasoning visualization (markdown + rich display)
+3. ✅ Implement citation display with links
+4. ✅ Add tool trace viewer (expandable sections)
+5. ✅ Graph visualization using networkx/pyvis
 
 **Deliverables:**
-- `superchat/ui/streamlit_app.py`
-- `superchat/ui/components/` (chat, reasoning, citations)
+- `notebooks/superchat_demo.ipynb` - Complete interactive demo
+- `superchat/notebook_ui/` - Reusable UI components
+  - `chat_widget.py` - Chat interface
+  - `reasoning_display.py` - Reasoning steps
+  - `citation_display.py` - Citation formatter
+  - `graph_viz.py` - Graph visualization
 
-**Tests:**
-- UI responsiveness
-- Streaming performance
+**Tests (in notebook):**
+- Widget responsiveness
+- Display formatting
 - Visualization accuracy
 
+**Note:** Jupyter widgets (ipywidgets) provide rich interactive UI:
+- Text input/output for chat
+- Collapsible sections for reasoning trace
+- Interactive graph visualization with pyvis
+- HTML/Markdown rendering for citations
+
 ---
 
-### **Sprint 5: Testing & Polish** (Day 5-6)
+### **Sprint 5: Testing & Documentation**
+
+**Focus:** Validation, optimization, and docs
 
 **Tasks:**
-1. ✅ End-to-end testing
-2. ✅ Performance optimization
+1. ✅ End-to-end testing in notebook
+2. ✅ Performance benchmarking
 3. ✅ Error handling and edge cases
-4. ✅ Documentation
+4. ✅ Comprehensive documentation
+5. ✅ Screen recording of notebook demo
 
 **Deliverables:**
-- `tests/test_superchat_e2e.py`
-- `docs/SUPERCHAT_USER_GUIDE.md`
-- `SUPERCHAT_DEMO_VIDEO.mp4`
+- `notebooks/superchat_test_suite.ipynb` - Comprehensive tests
+- `notebooks/superchat_benchmarks.ipynb` - Performance metrics
+- `docs/SUPERCHAT_USER_GUIDE.md` - Complete user guide
+- `docs/SUPERCHAT_API_REFERENCE.md` - API documentation
+- `SUPERCHAT_DEMO_VIDEO.mp4` - Screen recording
+
+**Tests (in notebook):**
+- Query accuracy across all tools
+- Performance benchmarks
+- Error recovery scenarios
+- Edge case handling
 
 ---
 
@@ -689,7 +757,7 @@ Phase 3 (SuperChat) will complete the Agentic Graph RAG system by adding:
 
 **Result:** A production-ready agentic knowledge graph assistant that enables natural language querying with full transparency and citations.
 
-**Timeline:** 5-6 days (Sprints 1-5)  
+**Timeline:** 5 sprints (iterative development)  
 **Effort:** ~40-50 hours of focused development  
 **Complexity:** Medium-High (agent orchestration + multi-tool coordination)
 
