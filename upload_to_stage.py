@@ -31,7 +31,7 @@ def upload_files():
         print("📤 Uploading code directory...")
         # Since app/code is a symlink, we need to upload the target directory
         code_target = os.path.realpath("app/code")
-        cur.execute(f"PUT file://{code_target} @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        cur.execute(f"PUT file://{code_target}/* @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
         print("✅ Code directory uploaded.")
 
         print("🎉 Upload complete!")
