@@ -66,5 +66,4 @@ jobs:
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         run: |
-          # Upload the entire code directory recursively using Snowflake CLI
-          snow stage copy app/code @SUPERSUITE_STAGE/code --recursive --overwrite --temporary-connection
+          echo "Files uploaded via Python script"

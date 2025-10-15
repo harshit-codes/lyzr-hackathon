@@ -27,8 +27,13 @@ def upload_files():
         cur.execute(f"PUT file://app/streamlit_app.py @{STAGE_NAME}/streamlit_app.py AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
         print("✅ Main file uploaded.")
 
-        # Note: Code directory is now uploaded via Snowflake CLI in the workflow
-        print("📤 Code directory will be uploaded via Snowflake CLI...")
+        # Upload code directory contents recursively
+        print("📤 Uploading code directory...")
+        # Since app/code is a symlink, we need to upload the target directory
+        code_target = os.path.realpath("app/code")
+        # Use recursive wildcard pattern to upload all files
+        cur.execute(f"PUT file://{code_target}/** @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        print("✅ Code directory uploaded.")
 
         print("🎉 Upload complete!")
 
