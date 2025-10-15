@@ -31,8 +31,17 @@ def upload_files():
         print("📤 Uploading code directory...")
         # Since app/code is a symlink, we need to upload the target directory
         code_target = os.path.realpath("app/code")
-        # Use recursive wildcard pattern to upload all files
-        cur.execute(f"PUT file://{code_target}/** @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        
+        # Use glob pattern to find all Python files recursively
+        import glob
+        python_files = glob.glob(f"{code_target}/**/*.py", recursive=True)
+        
+        # Upload each Python file individually
+        for file_path in python_files:
+            rel_path = os.path.relpath(file_path, code_target)
+            stage_path = f"code/{rel_path}"
+            cur.execute(f"PUT file://{file_path} @{STAGE_NAME}/{stage_path} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        
         print("✅ Code directory uploaded.")
 
         print("🎉 Upload complete!")
