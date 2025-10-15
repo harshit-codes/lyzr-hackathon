@@ -34,6 +34,17 @@ jobs:
         run: |
           snow connection test --temporary-connection
 
+      - name: Create Stage
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_DATABASE: SUPERSUITE_DB
+          SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        run: |
+          snow sql -q "CREATE OR REPLACE STAGE SUPERSUITE_STAGE" --temporary-connection
+
       - name: Deploy Streamlit App
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
