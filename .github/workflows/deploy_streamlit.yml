@@ -54,7 +54,8 @@ jobs:
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         run: |
-          snow streamlit deploy --temporary-connection
+          # Upload main file
+          snow sql -q "PUT file://app/streamlit_app.py @SUPERSUITE_DB.SUPERSUITE_SCHEMA.SUPERSUITE_STAGE/streamlit_app.py AUTO_COMPRESS=FALSE OVERWRITE=TRUE" --temporary-connection
 
       - name: Upload Code Directory to Stage
         env:
