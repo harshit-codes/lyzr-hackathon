@@ -1,0 +1,17 @@
+definition_version: "2"
+
+project:
+  name: hello-world-notebook
+
+entities:
+  - name: notebooks_stage
+    type: stage
+    identifier: SNOWFLAKE_LEARNING_DB.PUBLIC.NOTEBOOKS_STAGE
+    options:
+      if_not_exists: true
+
+  - name: hello_world
+    type: notebook
+    stage: "@SNOWFLAKE_LEARNING_DB.PUBLIC.NOTEBOOKS_STAGE"
+    path: "hello_world.ipynb"
+    query_warehouse: "COMPUTE_WH"

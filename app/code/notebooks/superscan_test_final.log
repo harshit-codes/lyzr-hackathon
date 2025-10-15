@@ -1,0 +1,135 @@
+================================================================================
+SUPERSCAN END-TO-END TEST CASE
+Test Data: Harshit's Resume PDF
+================================================================================
+
+📋 PHASE 1: Setup & Initialization
+--------------------------------------------------------------------------------
+  ✓ Initializing Snowflake database...
+✓ Database initialized successfully
+  ✓ Services initialized
+
+📋 PHASE 2: Create Project
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1928, in _process_params_dict
+    res = {k: self._process_single_param(v) for k, v in params.items()}
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1956, in _process_single_param
+    return _quote(escape(to_snowflake(param)))
+                         ^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/converter.py", line 506, in to_snowflake
+    return getattr(self, f"_{type_name}_to_snowflake")(value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/converter.py", line 680, in __getattr__
+    raise ProgrammingError(
+snowflake.connector.errors.ProgrammingError: 255001: Binding data in type (projectconfig) is not supported.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/cursor.py", line 993, in execute
+    query = self._preprocess_pyformat_query(command, params)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/cursor.py", line 792, in _preprocess_pyformat_query
+    processed_params = self._connection._process_params_pyformat(params, self)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1900, in _process_params_pyformat
+    return self._process_params_dict(params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1932, in _process_params_dict
+    Error.errorhandler_wrapper(
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 286, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 344, in hand_to_other_handler
+    connection.errorhandler(connection, cursor, error_class, error_value)
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 217, in default_errorhandler
+    raise error_class(
+snowflake.connector.errors.ProgrammingError: 252004: Failed processing pyformat-parameters: 255001: Binding data in type (projectconfig) is not supported.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/harshitchoudhary/Desktop/lyzr-hackathon/code/notebooks/test_superscan_flow.py", line 90, in <module>
+    project = project_svc.create_project(project_payload)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/harshitchoudhary/Desktop/lyzr-hackathon/code/superscan/project_service.py", line 30, in create_project
+    session.commit()
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 1048, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+           ^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+  File "/opt/miniconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/cursor.py", line 993, in execute
+    query = self._preprocess_pyformat_query(command, params)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/cursor.py", line 792, in _preprocess_pyformat_query
+    processed_params = self._connection._process_params_pyformat(params, self)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1900, in _process_params_pyformat
+    return self._process_params_dict(params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/connection.py", line 1932, in _process_params_dict
+    Error.errorhandler_wrapper(
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 286, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 344, in hand_to_other_handler
+    connection.errorhandler(connection, cursor, error_class, error_value)
+  File "/opt/miniconda3/lib/python3.12/site-packages/snowflake/connector/errors.py", line 217, in default_errorhandler
+    raise error_class(
+sqlalchemy.exc.ProgrammingError: (snowflake.connector.errors.ProgrammingError) 252004: Failed processing pyformat-parameters: 255001: Binding data in type (projectconfig) is not supported.
+[SQL: INSERT INTO projects (project_id, project_name, display_name, description, owner_id, owner_email, status, config, stats, tags, custom_metadata, created_at, updated_at, last_accessed_at, archived_at, deleted_at) VALUES (%(project_id)s, %(project_name)s, %(display_name)s, %(description)s, %(owner_id)s, %(owner_email)s, %(status)s, %(config)s, %(stats)s, %(tags)s, %(custom_metadata)s, %(created_at)s, %(updated_at)s, %(last_accessed_at)s, %(archived_at)s, %(deleted_at)s)]
+[parameters: {'project_id': 'da840b400f8649d894048b69804fd7cf', 'project_name': 'test-resume-knowledge-graph', 'display_name': 'Resume Knowledge Graph - Harshit', 'description': None, 'owner_id': 'test-user', 'owner_email': None, 'status': 'ACTIVE', 'config': ProjectConfig(default_embedding_model='text-embedding-3-small', embedding_dimension=1536, default_chunk_size=512, chunk_overlap=50, graph_db_type='neo ... (36 characters truncated) ... ble_entity_resolution=True, entity_similarity_threshold=0.85, default_retrieval_limit=10, llm_model='gpt-4o', llm_temperature=0.0, custom_settings={}), 'stats': ProjectStats(schema_count=0, node_count=0, edge_count=0, document_count=0, total_size_bytes=0, last_updated=None), 'tags': ['test', 'resume', 'hr-tech'], 'custom_metadata': {}, 'created_at': datetime.datetime(2025, 10, 14, 19, 30, 37, 162264), 'updated_at': datetime.datetime(2025, 10, 14, 19, 30, 37, 162272), 'last_accessed_at': None, 'archived_at': None, 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
