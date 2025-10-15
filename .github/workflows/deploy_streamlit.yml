@@ -55,10 +55,9 @@ jobs:
           SNOWFLAKE_DATABASE: SUPERSUITE_DB
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_INSECURE_MODE: "1"
         run: |
-          # Upload main file
-          snow sql -q "PUT file://app/streamlit_app.py @SUPERSUITE_DB.SUPERSUITE_SCHEMA.SUPERSUITE_STAGE/streamlit_app.py AUTO_COMPRESS=FALSE OVERWRITE=TRUE" --temporary-connection
+          pip install snowflake-connector-python
+          python upload_to_stage.py
 
       - name: Upload Code Directory to Stage
         env:
@@ -68,9 +67,8 @@ jobs:
           SNOWFLAKE_DATABASE: SUPERSUITE_DB
           SNOWFLAKE_SCHEMA: SUPERSUITE_SCHEMA
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_INSECURE_MODE: "1"
         run: |
-          snow sql -q "PUT file://app/code @SUPERSUITE_DB.SUPERSUITE_SCHEMA.SUPERSUITE_STAGE/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE" --temporary-connection
+          echo "Files uploaded via Python script"
 
       - name: Create Stage
         env:
