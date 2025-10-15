@@ -27,9 +27,11 @@ def upload_files():
         cur.execute(f"PUT file://app/streamlit_app.py @{STAGE_NAME}/streamlit_app.py AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
         print("✅ Main file uploaded.")
 
-        # Upload code directory
+        # Upload code directory contents recursively
         print("📤 Uploading code directory...")
-        cur.execute(f"PUT file://app/code @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        # Since app/code is a symlink, we need to upload the target directory
+        code_target = os.path.realpath("app/code")
+        cur.execute(f"PUT file://{code_target} @{STAGE_NAME}/code AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
         print("✅ Code directory uploaded.")
 
         print("🎉 Upload complete!")
