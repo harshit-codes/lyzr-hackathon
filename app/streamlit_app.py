@@ -1,61 +1,123 @@
 #!/usr/bin/env python3
 """
-SuperSuite Streamlit Web Application
+SuperSuite Streamlit Web Application - Production Version
 
-Simplified 4-step journey:
-1. Upload Documents (minimum 1 required)
-2. Create & Finetune Ontology (save to proceed)
-3. Data Extraction & Knowledge Base (view progress)
-4. Chat with Knowledge Base
+A comprehensive AI-powered document intelligence platform featuring:
+- Project-based document management with Snowflake persistence
+- Real document processing with PDF parsing and LLM-based entity extraction
+- Ontology creation and management with Neo4j graph database
+- Knowledge extraction with vector embeddings
+- Conversational AI with Cypher query capabilities using DeepSeek
+
+Integrated with:
+- Snowflake for data persistence
+- Neo4j Aura for graph database
+- DeepSeek for LLM services
+- HuggingFace for embeddings
 """
 
 import streamlit as st
-import os
 import sys
-import tempfile
 import time
-from pathlib import Path
-from typing import Dict, List, Optional, Any
 import uuid
+import os
+from pathlib import Path
+from typing import Dict, List, Optional
+from dotenv import load_dotenv
 
-# Add current directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+# Debug: Check current working directory
+print("=" * 80)
+print("Streamlit App Initialization")
+print("=" * 80)
+print(f"Current working directory: {os.getcwd()}")
+print(f".env file exists: {Path('.env').exists()}")
+print(f".env file path: {Path('.env').absolute()}")
+print("=" * 80)
 
-# Import SuperSuite components
-from end_to_end_orchestrator import EndToEndOrchestrator
+# Load environment variables first with explicit path
+env_path = Path(__file__).parent.parent / ".env"
+print(f"Loading .env from: {env_path}")
+print(f".env file exists at that path: {env_path.exists()}")
+result = load_dotenv(env_path, override=True)
+print(f"load_dotenv result: {result}")
 
-# Demo orchestrator for Snowflake environment
+# Debug: Print environment variables to verify they're loaded
+print("=" * 80)
+print("Environment Variables Check")
+print("=" * 80)
+print(f"SNOWFLAKE_ACCOUNT: {os.getenv('SNOWFLAKE_ACCOUNT')}")
+print(f"SNOWFLAKE_USER: {os.getenv('SNOWFLAKE_USER')}")
+print(f"SNOWFLAKE_DATABASE: {os.getenv('SNOWFLAKE_DATABASE')}")
+print(f"SNOWFLAKE_PASSWORD: {'***' if os.getenv('SNOWFLAKE_PASSWORD') else 'NOT SET'}")
+print(f"USE_LOCAL_DB: {os.getenv('USE_LOCAL_DB')}")
+print("=" * 80)
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import modular components
+from app.config import APP_TITLE, APP_ICON
+from app.utils import initialize_session_state, load_custom_css
+# Sidebar removed for cleaner UX - all content in main area
+from app.main_content import render_main_content
+
+# Import SuperSuite components (lazy import to avoid circular dependencies)
+# from app.end_to_end_orchestrator import EndToEndOrchestrator
+
+
+# Demo orchestrator for testing (maintains backward compatibility with tests)
 class DemoOrchestrator:
-    """Demo orchestrator that simulates SuperSuite functionality without database connections."""
-    
+    """
+    Demo orchestrator for testing purposes.
+    This maintains backward compatibility with existing tests.
+    """
     def __init__(self):
         self.current_project = None
         self.processed_files = []
-    
+        self.projects = []
+
     def initialize_services(self):
-        """Mock initialization for demo mode."""
         pass
-    
+
     def create_project(self, project_name: str, description: str = None):
-        """Create a mock project."""
-        self.current_project = {
+        project_id = str(uuid.uuid4())
+        project = {
+            "project_id": project_id,
             "project_name": project_name,
             "description": description,
-            "kb_project": type('MockProject', (), {'project_id': 'demo-project-id'})(),
-            "created_at": "2025-10-16T01:00:00Z"
+            "kb_project": type('MockProject', (), {'project_id': project_id})(),
+            "created_at": "2025-10-16T01:00:00Z",
+            "documents": [],
+            "ontology": None,
+            "knowledge_base": None
         }
-        return self.current_project
-    
+        self.projects.append(project)
+        self.current_project = project
+        return project
+
+    def get_projects(self):
+        return self.projects
+
+    def set_current_project(self, project_id: str):
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                self.current_project = project
+                return project
+        return None
+
+    def add_document_to_project(self, project_id: str, document_info: Dict):
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                if "documents" not in project:
+                    project["documents"] = []
+                project["documents"].append(document_info)
+                return True
+        return False
+
     def process_document(self, file_path: str, project_id: str = None):
-        """Mock document processing."""
-        import time
-        import os
         filename = os.path.basename(file_path)
-        
-        # Simulate processing time
-        time.sleep(2)
-        
-        return {
+        time.sleep(0.1)  # Minimal delay for testing
+        result = {
             "file_path": file_path,
             "project_id": project_id or "demo-project-id",
             "scan_results": {
@@ -78,616 +140,628 @@ class DemoOrchestrator:
             },
             "success": True
         }
-    
-    def initialize_chat_agent(self):
-        """Mock chat initialization."""
-        pass
-    
-    def query_knowledge_base(self, query: str):
-        """Mock knowledge base query."""
-        import time
-        time.sleep(1)  # Simulate processing time
-        
-        # Generate mock responses based on query
-        if "what is" in query.lower():
-            response = "SuperSuite is an AI-powered document intelligence platform that integrates document processing, knowledge extraction, and conversational AI."
-        elif "component" in query.lower():
-            response = "SuperSuite consists of three main components: SuperScan (document processing), SuperKB (knowledge base creation), and SuperChat (conversational AI)."
-        elif "author" in query.lower() or "who" in query.lower():
-            response = "The document was created by the AI Research Team at Tech Innovation Labs."
-        else:
-            response = f"Based on the processed documents, I can tell you that {query} relates to the core functionality of the SuperSuite platform."
-        
+        if project_id:
+            self.add_document_to_project(project_id, {
+                "filename": filename,
+                "status": "processed",
+                "result": result,
+                "uploaded_at": time.time()
+            })
+        return result
+
+    def generate_ontology(self, project_id: str, selected_documents: List[str]):
+        time.sleep(0.1)
+        ontology = {
+            "entities": [
+                {"name": "Person", "description": "Individuals", "attributes": ["name", "role"], "count": 5},
+                {"name": "Organization", "description": "Companies", "attributes": ["name", "industry"], "count": 3}
+            ],
+            "relationships": [
+                {"name": "works_for", "from_entity": "Person", "to_entity": "Organization", "description": "Employment", "count": 4}
+            ],
+            "generated_at": time.time(),
+            "selected_documents": selected_documents
+        }
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                project["ontology"] = ontology
+                break
+        return ontology
+
+    def extract_knowledge(self, project_id: str):
+        time.sleep(0.1)
+        knowledge_base = {
+            "tables": {
+                "Person": [{"id": 1, "name": "John Smith", "role": "CEO"}],
+                "Organization": [{"id": 1, "name": "TechCorp", "industry": "Technology"}],
+                "Concept": [{"id": 1, "name": "AI", "description": "Artificial Intelligence"}]
+            },
+            "relationships": [],
+            "stats": {"total_entities": 3, "total_relationships": 0, "tables_created": 3},
+            "extracted_at": time.time()
+        }
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                project["knowledge_base"] = knowledge_base
+                break
+        return knowledge_base
+
+    def query_knowledge_base(self, query: str, project_id=None):
+        time.sleep(0.1)
         return {
             "query": query,
-            "response": response,
+            "response": "Mock response",
             "intent": "information_request",
-            "citations": 2,
-            "reasoning_steps": 3,
-            "execution_time": 1.2,
+            "citations": 0,
+            "reasoning_steps": 0,
+            "execution_time": 0.1,
             "success": True
         }
-    
+
     def get_processing_summary(self):
-        """Mock processing summary."""
         if not self.processed_files:
             return {"total_files": 0, "message": "No documents processed yet"}
-        
         return {
             "total_files": len(self.processed_files),
-            "total_chunks": sum(f.get("kb_results", {}).get("chunks", 0) for f in self.processed_files),
-            "total_entities": sum(f.get("kb_results", {}).get("entities", 0) for f in self.processed_files),
-            "total_schemas": sum(f.get("scan_results", {}).get("schemas_created", 0) for f in self.processed_files),
-            "neo4j_synced": False,
-            "files": self.processed_files
+            "total_chunks": 0,
+            "total_entities": 0,
+            "total_schemas": 0
         }
+
+
+# Production orchestrator wrapper for Streamlit
+class ProductionOrchestrator:
+    """
+    Production orchestrator that wraps EndToEndOrchestrator for Streamlit compatibility.
+
+    This class provides a Streamlit-friendly interface to the real SuperSuite orchestrator,
+    handling session management and providing simplified methods for the UI.
+    """
+
+    def __init__(self, use_local_db: bool = False):
+        """
+        Initialize the production orchestrator.
+
+        Args:
+            use_local_db: If True, use local SQLite instead of Snowflake (for testing)
+        """
+        self.use_local_db = use_local_db
+        self.orchestrator = None  # Lazy-loaded
+        self.projects = []  # Cache of projects for UI
+        self.current_project = None
+        self._initialized = False
+
+    def _ensure_orchestrator(self):
+        """Lazy-load the EndToEndOrchestrator."""
+        if self.orchestrator is None:
+            try:
+                from app.end_to_end_orchestrator import EndToEndOrchestrator
+                self.orchestrator = EndToEndOrchestrator(
+                    use_local_db=self.use_local_db,
+                    use_synced_graph=False
+                )
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize EndToEndOrchestrator: {e}")
+
+    def initialize_services(self):
+        """Initialize all SuperSuite services (Snowflake, Neo4j, LLMs)."""
+        if not self._initialized:
+            try:
+                self._ensure_orchestrator()
+                self.orchestrator.initialize_services()
+                self._initialized = True
+                return {"success": True, "message": "Services initialized successfully"}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+        return {"success": True, "message": "Services already initialized"}
+
+    def create_project(self, project_name: str, description: str = None):
+        """
+        Create a new project in Snowflake.
+
+        Args:
+            project_name: Name of the project
+            description: Optional description
+
+        Returns:
+            Dictionary with project information
+        """
+        print("=" * 80)
+        print(f"ProductionOrchestrator.create_project() called")
+        print(f"  project_name: {project_name}")
+        print(f"  description: {description}")
+        print(f"  _initialized: {self._initialized}")
+        print("=" * 80)
+
+        try:
+            # Ensure orchestrator is initialized AND services are initialized
+            if not self._initialized:
+                print("  Services not initialized, calling initialize_services()...")
+                result = self.initialize_services()
+                print(f"  initialize_services() result: {result}")
+                if not result.get("success"):
+                    raise RuntimeError(f"Services not initialized: {result.get('error')}")
+
+            print("  Ensuring orchestrator exists...")
+            self._ensure_orchestrator()
+            print(f"  Orchestrator: {self.orchestrator}")
+
+            print("  Calling orchestrator.create_project()...")
+            try:
+                project = self.orchestrator.create_project(project_name, description)
+                print(f"  orchestrator.create_project() returned: {project}")
+            except Exception as e:
+                print(f"  ❌ Exception in orchestrator.create_project(): {e}")
+                import traceback
+                traceback.print_exc()
+                raise
+
+            # Convert to Streamlit-friendly format
+            # kb_project is now a dict (not an ORM object) to avoid DetachedInstanceError
+            kb_project = project["kb_project"]
+            project_id = kb_project["project_id"] if isinstance(kb_project, dict) else str(kb_project.project_id)
+
+            project_dict = {
+                "project_id": project_id,
+                "project_name": project_name,
+                "description": description,
+                "kb_project": kb_project,
+                "scan_project": project.get("scan_project"),
+                "created_at": str(project.get("created_at", "")),
+                "documents": [],
+                "ontology": None,
+                "knowledge_base": None
+            }
+
+            self.projects.append(project_dict)
+            self.current_project = project_dict
+            self.orchestrator.current_project = project
+
+            # Update session state to reflect the new project
+            st.session_state.current_project = project_dict
+
+            return project_dict
+
+        except Exception as e:
+            st.error(f"Failed to create project: {e}")
+            import traceback
+            st.error(f"Traceback: {traceback.format_exc()}")
+            return None
+
+    def get_projects(self):
+        """Get all projects from cache."""
+        return self.projects
+
+    def set_current_project(self, project_id: str):
+        """Set the current active project."""
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                self.current_project = project
+                # Update orchestrator's current project
+                self.orchestrator.current_project = {
+                    "kb_project": project["kb_project"],
+                    "scan_project": project.get("scan_project"),
+                    "project_name": project["project_name"],
+                    "created_at": project.get("created_at")
+                }
+                # Update session state
+                st.session_state.current_project = project
+                return project
+        return None
+
+    def add_document_to_project(self, project_id: str, document_info: Dict):
+        """Add a document to a project (for tracking in UI)."""
+        for project in self.projects:
+            if project["project_id"] == project_id:
+                if "documents" not in project:
+                    project["documents"] = []
+                project["documents"].append(document_info)
+                return True
+        return False
+
+    def generate_schemas_only(self, file_path: str, project_id: str = None):
+        """
+        Stage 1: Generate schemas from document without extracting entities.
+
+        This performs REAL schema generation:
+        - PDF parsing and text extraction
+        - LLM-based schema proposal generation
+        - Schema creation in Snowflake
+
+        Args:
+            file_path: Path to the document file
+            project_id: ID of the project to process into
+
+        Returns:
+            Dictionary with schema generation results
+        """
+        try:
+            self._ensure_orchestrator()
+            result = self.orchestrator.generate_schemas_only(file_path, project_id)
+            return result
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "file_path": file_path
+            }
+
+    def process_kb_only(self, file_id: str, project_id: str = None):
+        """
+        Stage 2: Process knowledge base using approved schemas.
+
+        This performs REAL KB processing:
+        - Document chunking
+        - Entity extraction
+        - Node and edge creation
+        - Embedding generation
+        - Neo4j synchronization
+
+        Args:
+            file_id: ID of the file to process (from Stage 1)
+            project_id: ID of the project
+
+        Returns:
+            Dictionary with KB processing results
+        """
+        try:
+            self._ensure_orchestrator()
+            result = self.orchestrator.process_kb_only(file_id, project_id)
+            return result
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "file_id": file_id
+            }
+
+    def process_document(self, file_path: str, project_id: str = None):
+        """
+        Process a document through SuperScan and SuperKB pipelines.
+
+        This performs REAL processing:
+        - PDF parsing and text extraction
+        - LLM-based schema generation
+        - Entity extraction
+        - Knowledge graph creation
+        - Neo4j synchronization
+
+        Args:
+            file_path: Path to the document file
+            project_id: ID of the project to process into
+
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            self._ensure_orchestrator()
+            result = self.orchestrator.process_document(file_path, project_id)
+
+            # Add to project's documents list for UI
+            if result.get("success") and project_id:
+                filename = os.path.basename(file_path)
+                self.add_document_to_project(project_id, {
+                    "filename": filename,
+                    "status": "processed",
+                    "result": result,
+                    "uploaded_at": time.time()
+                })
+
+            return result
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "file_path": file_path
+            }
+
+    def generate_ontology(self, project_id: str, selected_documents: List[str]):
+        """
+        Generate ontology from processed documents.
+
+        This uses REAL data from Snowflake schemas and entities.
+
+        Args:
+            project_id: ID of the project
+            selected_documents: List of document filenames to include
+
+        Returns:
+            Dictionary with ontology information
+        """
+        try:
+            self._ensure_orchestrator()
+            # Query schemas from Snowflake
+            from app.graph_rag.models.schema import Schema
+            from app.graph_rag.models.node import Node
+            from app.graph_rag.models.edge import Edge
+
+            with self.orchestrator.db_session.get_session() as session:
+                from sqlmodel import select
+
+                # Get schemas for this project
+                schemas = session.exec(
+                    select(Schema).where(Schema.project_id == project_id)
+                ).all()
+
+                # Get nodes for this project
+                nodes = session.exec(
+                    select(Node).where(Node.project_id == project_id)
+                ).all()
+
+                # Get edges for this project
+                edges = session.exec(
+                    select(Edge).where(Edge.project_id == project_id)
+                ).all()
+
+                # Build ontology from real data
+                entity_types = {}
+                for schema in schemas:
+                    entity_types[schema.schema_name] = {
+                        "name": schema.schema_name,
+                        "description": f"Entity type: {schema.entity_type}",
+                        "attributes": schema.attributes or [],
+                        "count": sum(1 for n in nodes if n.node_type == schema.schema_name)
+                    }
+
+                # Build relationships from edges
+                relationship_types = {}
+                for edge in edges:
+                    edge_type = edge.edge_type or "related_to"
+                    if edge_type not in relationship_types:
+                        relationship_types[edge_type] = {
+                            "name": edge_type,
+                            "from_entity": edge.from_node_type or "Unknown",
+                            "to_entity": edge.to_node_type or "Unknown",
+                            "description": f"Relationship: {edge_type}",
+                            "count": 0
+                        }
+                    relationship_types[edge_type]["count"] += 1
+
+                ontology = {
+                    "entities": list(entity_types.values()),
+                    "relationships": list(relationship_types.values()),
+                    "generated_at": time.time(),
+                    "selected_documents": selected_documents
+                }
+
+                # Update project
+                for project in self.projects:
+                    if project["project_id"] == project_id:
+                        project["ontology"] = ontology
+                        break
+
+                return ontology
+
+        except Exception as e:
+            st.error(f"Failed to generate ontology: {e}")
+            # Return empty ontology on error
+            return {
+                "entities": [],
+                "relationships": [],
+                "generated_at": time.time(),
+                "selected_documents": selected_documents,
+                "error": str(e)
+            }
+
+    def extract_knowledge(self, project_id: str):
+        """
+        Extract knowledge from documents (query real data from Snowflake).
+
+        Args:
+            project_id: ID of the project
+
+        Returns:
+            Dictionary with knowledge base tables
+        """
+        try:
+            self._ensure_orchestrator()
+            from app.graph_rag.models.node import Node
+            from app.graph_rag.models.edge import Edge
+
+            with self.orchestrator.db_session.get_session() as session:
+                from sqlmodel import select
+
+                # Get all nodes for this project
+                nodes = session.exec(
+                    select(Node).where(Node.project_id == project_id)
+                ).all()
+
+                # Get all edges for this project
+                edges = session.exec(
+                    select(Edge).where(Edge.project_id == project_id)
+                ).all()
+
+                # Group nodes by type
+                tables = {}
+                for node in nodes:
+                    node_type = node.node_type or "Unknown"
+                    if node_type not in tables:
+                        tables[node_type] = []
+
+                    # Convert node to table row
+                    row = {"id": node.node_id}
+                    if node.properties:
+                        row.update(node.properties)
+                    tables[node_type].append(row)
+
+                # Build relationships list
+                relationships = []
+                for edge in edges:
+                    relationships.append({
+                        "from_node": edge.from_node_id,
+                        "to_node": edge.to_node_id,
+                        "relationship": edge.edge_type or "related_to",
+                        "properties": edge.properties or {}
+                    })
+
+                knowledge_base = {
+                    "tables": tables,
+                    "relationships": relationships,
+                    "stats": {
+                        "total_entities": len(nodes),
+                        "total_relationships": len(edges),
+                        "tables_created": len(tables)
+                    },
+                    "extracted_at": time.time()
+                }
+
+                # Update project
+                for project in self.projects:
+                    if project["project_id"] == project_id:
+                        project["knowledge_base"] = knowledge_base
+                        break
+
+                return knowledge_base
+
+        except Exception as e:
+            st.error(f"Failed to extract knowledge: {e}")
+            return {
+                "tables": {},
+                "relationships": [],
+                "stats": {"total_entities": 0, "total_relationships": 0, "tables_created": 0},
+                "extracted_at": time.time(),
+                "error": str(e)
+            }
+
+    def initialize_chat_agent(self):
+        """Initialize the SuperChat agent with real LLM and graph capabilities."""
+        try:
+            self._ensure_orchestrator()
+            if not self.orchestrator.chat_orchestrator:
+                self.orchestrator.initialize_chat_agent()
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def query_knowledge_base(self, query: str, project_id=None):
+        """
+        Query the knowledge base using SuperChat with real LLM and graph traversal.
+
+        Args:
+            query: The user's query string
+            project_id: Optional project ID to query against
+
+        Returns:
+            Dictionary with query response
+        """
+        try:
+            self._ensure_orchestrator()
+            # Initialize chat agent if not already done
+            if not self.orchestrator.chat_orchestrator:
+                self.orchestrator.initialize_chat_agent()
+
+            # Query using real SuperChat
+            response = self.orchestrator.query_knowledge_base(query)
+
+            return {
+                "success": response.get("success", True),
+                "response": response.get("response", ""),
+                "intent": response.get("intent", "unknown"),
+                "citations": response.get("citations", 0),
+                "reasoning_steps": response.get("reasoning_steps", 0),
+                "execution_time": response.get("execution_time", 0)
+            }
+
+        except Exception as e:
+            # Fallback to simple response on error
+            return {
+                "success": False,
+                "response": f"I encountered an error processing your query: {str(e)}",
+                "error": str(e)
+            }
+
+    def get_processing_summary(self):
+        """Get processing summary from real orchestrator."""
+        try:
+            self._ensure_orchestrator()
+            return self.orchestrator.get_processing_summary()
+        except Exception as e:
+            return {
+                "total_files": 0,
+                "message": "No documents processed yet",
+                "error": str(e)
+            }
+
 
 # Page configuration
 st.set_page_config(
     page_title="SuperSuite - AI Document Intelligence",
-    page_icon="🚀",
+    page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed",  # Hide sidebar completely
+    menu_items={
+        'Get Help': 'https://github.com/LyzrCore/lyzr',
+        'Report a bug': 'https://github.com/LyzrCore/lyzr/issues',
+        'About': """
+        # SuperSuite - AI Document Intelligence Platform
+
+        Transform your documents into intelligent knowledge graphs with AI-powered schema generation,
+        entity extraction, and natural language querying.
+
+        **Features:**
+        - 🧬 AI-Powered Ontology Generation
+        - 🧠 Knowledge Graph Creation
+        - 💬 Natural Language Chat Interface
+        - 📊 Real-time Processing Feedback
+
+        **Version:** 1.0.0
+        **Powered by:** Snowflake, Neo4j, DeepSeek AI
+        """
+    }
 )
 
+# Load custom CSS
+load_custom_css()
+
 # Initialize session state
-if "current_step" not in st.session_state:
-    st.session_state.current_step = 1
-if "selected_project" not in st.session_state:
-    st.session_state.selected_project = None
-if "uploaded_files" not in st.session_state:
-    st.session_state.uploaded_files = []
-if "orchestrator" not in st.session_state:
-    st.session_state.orchestrator = None
-if "processing_results" not in st.session_state:
-    st.session_state.processing_results = []
-if "chat_initialized" not in st.session_state:
-    st.session_state.chat_initialized = False
+initialize_session_state()
+
 
 def initialize_orchestrator():
-    """Initialize the SuperSuite orchestrator if not already done."""
+    """
+    Initialize the SuperSuite orchestrator with real integrations.
+
+    This function initializes the ProductionOrchestrator which connects to:
+    - Snowflake for data persistence
+    - Neo4j Aura for graph database
+    - DeepSeek for LLM services
+    """
     if st.session_state.orchestrator is None:
-        try:
-            # Check if we're running in Snowflake environment
-            import os
-            is_snowflake_env = os.getenv('SNOWFLAKE_ACCOUNT') is not None
-            
-            if is_snowflake_env:
-                # In Snowflake environment, use demo mode without database connections
-                st.session_state.orchestrator = DemoOrchestrator()
-                st.info("🔧 Running in demo mode - using simulated SuperSuite functionality")
-            else:
-                # Local development - use real orchestrator
-                st.session_state.orchestrator = EndToEndOrchestrator(use_local_db=True)
-                st.session_state.orchestrator.initialize_services()
-            return True
-        except Exception as e:
-            st.error(f"❌ Failed to initialize SuperSuite: {e}")
-            return False
-    return True
-
-def create_project(project_name: str, description: str = None):
-    """Create a new SuperSuite project."""
-    if not initialize_orchestrator():
-        return False
-
-    try:
-        project = st.session_state.orchestrator.create_project(
-            project_name=project_name,
-            description=description or f"Streamlit web interface project: {project_name}"
-        )
-        st.session_state.selected_project = project
-        return True
-    except Exception as e:
-        st.error(f"❌ Failed to create project: {e}")
-        return False
-
-def process_uploaded_files():
-    """Process all uploaded files through SuperSuite."""
-    if not st.session_state.orchestrator or not st.session_state.selected_project:
-        st.error("❌ Orchestrator or project not initialized")
-        return False
-
-    success_count = 0
-    total_files = len(st.session_state.uploaded_files)
-
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-
-    for i, uploaded_file in enumerate(st.session_state.uploaded_files):
-        try:
-            # Save uploaded file to temporary location
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                tmp_file.write(uploaded_file.getvalue())
-                tmp_file_path = tmp_file.name
-
-            status_text.text(f"🔍 Processing {uploaded_file.name}... ({i+1}/{total_files})")
-
-            # Process through SuperSuite
-            result = st.session_state.orchestrator.process_document(
-                file_path=tmp_file_path,
-                project_id=str(st.session_state.selected_project["kb_project"].project_id)
-            )
-
-            if result.get("success"):
-                st.session_state.processing_results.append({
-                    "filename": uploaded_file.name,
-                    "result": result,
-                    "timestamp": time.time()
-                })
-                success_count += 1
-            else:
-                st.error(f"❌ Failed to process {uploaded_file.name}: {result.get('error', 'Unknown error')}")
-
-            # Clean up temp file
-            os.unlink(tmp_file_path)
-
-        except Exception as e:
-            st.error(f"❌ Error processing {uploaded_file.name}: {e}")
-
-        # Update progress
-        progress_bar.progress((i + 1) / total_files)
-
-    status_text.text(f"✅ Processing complete! {success_count}/{total_files} files processed successfully")
-    progress_bar.empty()
-    status_text.empty()
-
-    return success_count > 0
-
-def initialize_chat():
-    """Initialize the chat agent."""
-    if not st.session_state.orchestrator:
-        return False
-
-    try:
-        st.session_state.orchestrator.initialize_chat_agent()
-        st.session_state.chat_initialized = True
-        return True
-    except Exception as e:
-        st.error(f"❌ Failed to initialize chat: {e}")
-        return False
-
-def query_knowledge_base(query: str):
-    """Query the knowledge base."""
-    if not st.session_state.orchestrator or not st.session_state.chat_initialized:
-        return {"error": "Chat not initialized"}
-
-    try:
-        response = st.session_state.orchestrator.query_knowledge_base(query)
-        return response
-    except Exception as e:
-        return {"error": str(e)}
-
-def render_step_indicator():
-    """Render the 4-step progress indicator"""
-    st.header("🚀 SuperSuite - AI Document Intelligence")
-
-    # Step indicator
-    steps = ["📤 Upload Documents", "🎯 Create Ontology", "🧠 Extract Knowledge", "💬 Chat Interface"]
-    cols = st.columns(4)
-
-    for i, (col, step) in enumerate(zip(cols, steps), 1):
-        with col:
-            if i < st.session_state.current_step:
-                st.success(f"✅ {step}")
-            elif i == st.session_state.current_step:
-                st.info(f"🔄 {step}")
-            else:
-                st.write(f"⏸️ {step}")
-
-def render_sidebar():
-    """Render the project management sidebar"""
-    with st.sidebar:
-        st.header("📁 Project Management")
-
-        # Initialize orchestrator
-        if not initialize_orchestrator():
-            st.error("Failed to initialize SuperSuite")
-            return
-
-        # Project selection/creation
-        st.subheader("Select or Create Project")
-
-        # Get existing projects from orchestrator
-        existing_projects = []
-        if st.session_state.orchestrator and hasattr(st.session_state.orchestrator, 'current_project'):
-            # For now, we'll use a simple list - in a real app you'd query the database
-            existing_projects = ["Demo Project", "Research Papers", "Legal Documents"]
-
-        selected = st.selectbox(
-            "Projects",
-            ["Create New Project..."] + existing_projects,
-            key="project_selector"
-        )
-
-        if selected == "Create New Project...":
-            with st.form("new_project"):
-                project_name = st.text_input("Project Name")
-                project_desc = st.text_area("Description (optional)")
-                submitted = st.form_submit_button("Create Project")
-
-                if submitted and project_name:
-                    if create_project(project_name.strip(), project_desc.strip() if project_desc else None):
-                        st.success(f"✅ Project '{project_name}' created!")
-                        st.rerun()
-        else:
-            # For existing projects, we'd need to load them from the database
-            # For now, just set the selected project name
-            st.session_state.selected_project = {"project_name": selected}
-
-        # Current project info
-        if st.session_state.selected_project:
-            st.divider()
-            st.subheader("Current Project")
-            project_name = st.session_state.selected_project.get("project_name", "Unknown")
-            st.write(f"**{project_name}**")
-
-            # Project stats
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Documents", len(st.session_state.uploaded_files))
-            with col2:
-                processed_count = len(st.session_state.processing_results)
-                st.metric("Processed", processed_count)
-
-            # Show processing summary if available
-            if st.session_state.orchestrator:
-                try:
-                    summary = st.session_state.orchestrator.get_processing_summary()
-                    if summary.get("total_files", 0) > 0:
-                        st.divider()
-                        st.subheader("📊 Processing Summary")
-                        st.metric("Total Chunks", summary.get("total_chunks", 0))
-                        st.metric("Total Entities", summary.get("total_entities", 0))
-                        st.metric("Neo4j Synced", "✅" if summary.get("neo4j_synced") else "❌")
-                except:
-                    pass  # Summary might not be available yet
-
-def render_step_1():
-    """Step 1: Document Upload"""
-    st.header("📤 Step 1: Upload Documents")
-
-    st.write("Upload PDF documents to begin the knowledge extraction process.")
-    st.write("**Requirement:** At least one document is required to proceed.")
-
-    # File uploader
-    uploaded_files = st.file_uploader(
-        "Choose PDF files",
-        type=["pdf"],
-        accept_multiple_files=True,
-        key="file_uploader"
-    )
-
-    if uploaded_files:
-        st.session_state.uploaded_files = uploaded_files
-        st.success(f"✅ {len(uploaded_files)} document(s) uploaded successfully!")
-
-        # File list
-        st.subheader("Uploaded Files")
-        for i, file in enumerate(uploaded_files, 1):
-            col1, col2, col3 = st.columns([3, 1, 1])
-            with col1:
-                st.write(f"{i}. {file.name}")
-            with col2:
-                st.write(f"{file.size / 1024:.1f} KB")
-            with col3:
-                if st.button("🗑️ Remove", key=f"remove_{i}"):
-                    st.session_state.uploaded_files.pop(i-1)
-                    st.rerun()
-
-        # Proceed button
-        if len(st.session_state.uploaded_files) > 0:
-            st.divider()
-            if st.button("✅ Proceed to Ontology Creation", type="primary", use_container_width=True):
-                st.session_state.current_step = 2
-                st.rerun()
-    else:
-        st.info("👆 Please upload at least one PDF document to continue.")
-
-def render_step_2():
-    """Step 2: Ontology Creation"""
-    st.header("🎯 Step 2: Create & Finetune Ontology")
-
-    st.write("Define the knowledge structure for your documents.")
-    st.write("The system will analyze your uploaded documents and suggest an ontology.")
-
-    if not st.session_state.selected_project:
-        st.warning("⚠️ Please select or create a project first")
-        return
-
-    # Check if we have processed results to show ontology
-    if st.session_state.processing_results:
-        st.success("✅ Ontology created from document analysis!")
-
-        # Show ontology from processing results
-        st.subheader("Current Ontology")
-
-        # Extract schema information from processing results
-        all_schemas = []
-        total_schemas = 0
-        for result in st.session_state.processing_results:
-            scan_results = result.get("result", {}).get("scan_results", {})
-            schemas_created = scan_results.get("schemas_created", 0)
-            total_schemas += schemas_created
-            if schemas_created > 0:
-                all_schemas.append(f"• {schemas_created} schemas created from {result['filename']}")
-
-        if all_schemas:
-            st.write(f"**Total Schemas Created: {total_schemas}**")
-            for schema in all_schemas:
-                st.write(schema)
-        else:
-            st.write("*Schemas will be displayed here after processing*")
-
-        # Show sample ontology structure
-        st.code("""
-Entity Types (Auto-detected):
-- Person: Individuals mentioned in documents
-- Organization: Companies, institutions
-- Concept: Key ideas and topics
-- Event: Important occurrences
-- Location: Places mentioned
-
-Relationships (Auto-detected):
-- works_for: Person → Organization
-- located_in: Organization/Event → Location
-- related_to: Concept → Concept
-        """)
-
-        # Finetuning options
-        st.subheader("Finetune Ontology")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("➕ Add Entity Type"):
-                st.info("Add entity type functionality would go here")
-
-            if st.button("🔗 Add Relationship"):
-                st.info("Add relationship functionality would go here")
-
-        with col2:
-            if st.button("🎨 Auto-optimize"):
-                st.info("Auto-optimization would run here")
-
-            if st.button("🔄 Reset to Default"):
-                st.info("Reset functionality would go here")
-
-        # Save and proceed
-        st.divider()
-        col1, col2, col3 = st.columns([1, 1, 2])
-        with col1:
-            if st.button("⬅️ Back to Upload"):
-                st.session_state.current_step = 1
-                st.rerun()
-        with col2:
-            if st.button("💾 Save Ontology"):
-                st.success("✅ Ontology saved!")
-        with col3:
-            if st.button("✅ Proceed to Data Extraction", type="primary"):
-                st.session_state.current_step = 3
-                st.rerun()
-
-    else:
-        # No processing results yet - show that processing is needed
-        st.info("ℹ️ Ontology will be created after document processing in the next step.")
-
-        st.divider()
-        if st.button("⬅️ Back to Upload"):
-            st.session_state.current_step = 1
-            st.rerun()
-
-        if st.button("⚡ Skip to Data Extraction", type="primary"):
-            st.session_state.current_step = 3
-            st.rerun()
-
-def render_step_3():
-    """Step 3: Data Extraction & Knowledge Base"""
-    st.header("🧠 Step 3: Data Extraction & Knowledge Base")
-
-    st.write("Extract knowledge from your documents and view the structured data.")
-    st.write("Monitor the processing progress in real-time.")
-
-    if not st.session_state.selected_project:
-        st.warning("⚠️ Please select or create a project first")
-        return
-
-    # Check if files have been processed
-    if st.session_state.processing_results:
-        st.success("🎉 Knowledge extraction completed!")
-
-        # Display knowledge base tables from real results
-        st.subheader("Knowledge Base Tables")
-
-        tab1, tab2, tab3 = st.tabs(["📄 Documents", "👥 Entities", "🔗 Relationships"])
-
-        with tab1:
-            st.write("### Processed Documents")
-            # Show real document processing results
-            doc_data = []
-            for result in st.session_state.processing_results:
-                kb_results = result.get("result", {}).get("kb_results", {})
-                scan_results = result.get("result", {}).get("scan_results", {})
-                doc_data.append({
-                    "Document": result["filename"],
-                    "Chunks": kb_results.get("chunks", 0),
-                    "Entities": kb_results.get("entities", 0),
-                    "Schemas": scan_results.get("schemas_created", 0),
-                    "Status": "✅ Complete"
-                })
-
-            if doc_data:
-                st.dataframe(doc_data)
-            else:
-                st.write("No document data available")
-
-        with tab2:
-            st.write("### Extracted Entities")
-            # For now, show summary - in a real app you'd query the database
-            entity_summary = []
-            for result in st.session_state.processing_results:
-                kb_results = result.get("result", {}).get("kb_results", {})
-                entities = kb_results.get("entities", 0)
-                if entities > 0:
-                    entity_summary.append({
-                        "Document": result["filename"],
-                        "Entities Extracted": entities,
-                        "Status": "✅ Processed"
-                    })
-
-            if entity_summary:
-                st.dataframe(entity_summary)
-                st.info("💡 Entity details are stored in the knowledge graph database")
-            else:
-                st.write("No entity data available yet")
-
-        with tab3:
-            st.write("### Entity Relationships")
-            # For now, show summary - in a real app you'd query the database
-            relationship_summary = []
-            for result in st.session_state.processing_results:
-                kb_results = result.get("result", {}).get("kb_results", {})
-                edges = kb_results.get("edges", 0)
-                if edges > 0:
-                    relationship_summary.append({
-                        "Document": result["filename"],
-                        "Relationships": edges,
-                        "Status": "✅ Processed"
-                    })
-
-            if relationship_summary:
-                st.dataframe(relationship_summary)
-                st.info("💡 Relationship details are stored in the Neo4j graph database")
-            else:
-                st.write("No relationship data available yet")
-
-        # Initialize chat option
-        if not st.session_state.chat_initialized:
-            st.divider()
-            if st.button("🎯 Initialize Chat Agent", type="secondary"):
-                with st.spinner("🤖 Setting up conversational AI..."):
-                    if initialize_chat():
-                        st.success("✅ Chat agent ready!")
-                        st.rerun()
-
-        # Proceed to chat
-        st.divider()
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("⬅️ Back to Ontology"):
-                st.session_state.current_step = 2
-                st.rerun()
-        with col2:
-            if st.button("💬 Proceed to Chat Interface", type="primary", use_container_width=True):
-                st.session_state.current_step = 4
-                st.rerun()
-
-    else:
-        # No processing results - need to process files
-        if not st.session_state.uploaded_files:
-            st.warning("⚠️ Please upload documents first")
-            if st.button("⬅️ Back to Upload"):
-                st.session_state.current_step = 1
-                st.rerun()
-            return
-
-        # Process files
-        st.info(f"Ready to process {len(st.session_state.uploaded_files)} document(s)")
-
-        if st.button("🚀 Start Knowledge Extraction", type="primary"):
-            with st.spinner("🔄 Processing documents..."):
-                success = process_uploaded_files()
-
-            if success:
-                st.success("✅ Document processing completed!")
-                st.rerun()
-            else:
-                st.error("❌ Document processing failed. Please try again.")
-
-        st.divider()
-        if st.button("⬅️ Back to Ontology"):
-            st.session_state.current_step = 2
-            st.rerun()
-
-def render_step_4():
-    """Step 4: Chat Interface"""
-    st.header("💬 Step 4: Chat with Knowledge Base")
-
-    st.write("Ask questions about your documents and get AI-powered answers based on the extracted knowledge base.")
-
-    if not st.session_state.chat_initialized:
-        st.warning("⚠️ Chat agent not initialized. Please complete the data extraction step first.")
-        if st.button("⬅️ Back to Knowledge Base"):
-            st.session_state.current_step = 3
-            st.rerun()
-        return
-
-    # Chat interface
-    if "chat_messages" not in st.session_state:
-        st.session_state.chat_messages = []
-
-    # Display chat history
-    chat_container = st.container(height=400)
-    with chat_container:
-        for message in st.session_state.chat_messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-                if "sources" in message and message["sources"]:
-                    with st.expander("📚 Sources"):
-                        for source in message["sources"]:
-                            st.write(f"• {source}")
-
-    # Chat input
-    if prompt := st.chat_input("Ask me anything about your documents..."):
-        # Add user message
-        st.session_state.chat_messages.append({"role": "user", "content": prompt})
-
-        # Query the knowledge base
-        with st.chat_message("assistant"):
-            with st.spinner("🤔 Analyzing knowledge base..."):
-                response = query_knowledge_base(prompt)
-
-                if "error" in response:
-                    st.error(f"❌ {response['error']}")
-                    response_text = f"Error: {response['error']}"
-                    sources = []
+        with st.spinner("Initializing SuperSuite services..."):
+            try:
+                # Check if we should use local DB (for testing)
+                use_local_db = os.getenv("USE_LOCAL_DB", "false").lower() == "true"
+                print(f"DEBUG: USE_LOCAL_DB env var = {os.getenv('USE_LOCAL_DB')}")
+                print(f"DEBUG: use_local_db = {use_local_db}")
+
+                # Create production orchestrator
+                st.session_state.orchestrator = ProductionOrchestrator(use_local_db=use_local_db)
+
+                # Initialize services
+                result = st.session_state.orchestrator.initialize_services()
+
+                if result.get("success"):
+                    st.success("✅ SuperSuite services initialized successfully!")
                 else:
-                    response_text = response.get("response", "No response generated")
-                    # Extract sources if available (would need to parse from response)
-                    sources = [f"Document analysis (citations: {response.get('citations', 0)})"]
+                    st.error(f"❌ Failed to initialize services: {result.get('error')}")
 
-                st.markdown(response_text)
-                if sources:
-                    with st.expander("📚 Sources"):
-                        for source in sources:
-                            st.write(f"• {source}")
+            except Exception as e:
+                st.error(f"❌ Failed to initialize orchestrator: {e}")
+                st.info("💡 Check your .env file and ensure all credentials are correct")
+                # Create a fallback orchestrator for demo purposes
+                st.warning("⚠️ Running in fallback mode with limited functionality")
 
-        # Add assistant response to chat history
-        st.session_state.chat_messages.append({
-            "role": "assistant",
-            "content": response_text,
-            "sources": sources
-        })
+    return st.session_state.orchestrator
 
-    # Navigation
-    st.divider()
-    if st.button("⬅️ Back to Knowledge Base"):
-        st.session_state.current_step = 3
-        st.rerun()
-
-# Main application
 def main():
-    render_sidebar()
-    render_step_indicator()
+    """Main application"""
+    # Initialize orchestrator
+    initialize_orchestrator()
 
-    # Render current step
-    if st.session_state.current_step == 1:
-        render_step_1()
-    elif st.session_state.current_step == 2:
-        render_step_2()
-    elif st.session_state.current_step == 3:
-        render_step_3()
-    elif st.session_state.current_step == 4:
-        render_step_4()
+    # Main content (sidebar removed for cleaner UX)
+    render_main_content()
+
 
 if __name__ == "__main__":
     main()

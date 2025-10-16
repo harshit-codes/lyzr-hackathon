@@ -1,0 +1,26 @@
+2025-10-16 11:44:45.055 
+Warning: the config option 'server.enableCORS=false' is not compatible with
+'server.enableXsrfProtection=true'.
+As a result, 'server.enableCORS' is being overridden to 'true'.
+
+More information:
+In order to protect against CSRF attacks, we send a cookie with each request.
+To do so, we must specify allowable origins, which places a restriction on
+cross-origin resource sharing.
+
+If cross origin resource sharing is required, please disable server.enableXsrfProtection.
+            
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8504
+  Network URL: http://192.168.0.102:8504
+  External URL: http://49.205.207.44:8504
+
+Traceback (most recent call last):
+  File "/Users/harshitchoudhary/Desktop/lyzr-hackathon/app/end_to_end_orchestrator.py", line 147, in initialize_services
+    signal.signal(signal.SIGALRM, timeout_handler)
+  File "/opt/miniconda3/lib/python3.12/signal.py", line 58, in signal
+    handler = _signal.signal(_enum_to_int(signalnum), _enum_to_int(handler))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: signal only works in main thread of the main interpreter

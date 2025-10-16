@@ -9,10 +9,10 @@ from typing import Dict, List, Optional, Any, Tuple
 from sqlmodel import Session, select, func, text
 
 from .base_tool import BaseTool, ToolResult
-from graph_rag.models.node import Node
-from graph_rag.models.edge import Edge
-from graph_rag.models.project import Project
-from graph_rag.models.schema import Schema
+from app.graph_rag.models.node import Node
+from app.graph_rag.models.edge import Edge
+from app.graph_rag.models.project import Project
+from app.graph_rag.models.schema import Schema
 
 
 class RelationalTool(BaseTool):

@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 
 from pydantic import field_validator
 from sqlmodel import Column, Field, SQLModel
-from graph_rag.db import VariantType
+from app.graph_rag.db import VariantType
 
 
 class FileRecord(SQLModel, table=True):
@@ -21,6 +21,7 @@ class FileRecord(SQLModel, table=True):
     """
 
     __tablename__ = "files"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     file_id: UUID = Field(default_factory=uuid4, primary_key=True)

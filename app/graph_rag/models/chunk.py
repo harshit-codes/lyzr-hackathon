@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
-from graph_rag.db.variant_type import VariantType
+from app.graph_rag.db.variant_type import VariantType
 
 
 class Chunk(SQLModel, table=True):
@@ -36,7 +36,8 @@ class Chunk(SQLModel, table=True):
     """
     
     __tablename__ = "chunks"
-    
+    __table_args__ = {'extend_existing': True}
+
     # Primary Key
     id: UUID = Field(
         default_factory=uuid4,

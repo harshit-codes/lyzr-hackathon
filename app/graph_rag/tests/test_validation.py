@@ -10,7 +10,7 @@ Tests:
 
 import pytest
 
-from graph_rag.validation import (
+from app.graph_rag.validation import (
     StructuredDataValidator,
     UnstructuredDataValidator,
     VectorValidator,

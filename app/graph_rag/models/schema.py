@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel, Column, ForeignKey, Relationship
 from pydantic import field_validator
 from typing import TYPE_CHECKING
-from graph_rag.db import VariantType
+from app.graph_rag.db import VariantType
 
 if TYPE_CHECKING:
     from .project import Project
@@ -56,6 +56,7 @@ class Schema(SQLModel, table=True):
         edges: A list of the edges that conform to this schema.
     """
     __tablename__ = "schemas"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     schema_id: UUID = Field(

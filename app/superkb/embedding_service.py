@@ -10,8 +10,8 @@ from uuid import UUID
 from sqlmodel import Session, select
 from sentence_transformers import SentenceTransformer
 
-from graph_rag.models.chunk import Chunk
-from graph_rag.models.node import Node
+from app.graph_rag.models.chunk import Chunk
+from app.graph_rag.models.node import Node
 
 
 class EmbeddingService:
@@ -137,8 +137,8 @@ class EmbeddingService:
         # Create text from node data for embedding
         texts = []
         for node in nodes:
-            # Combine label and structured data text
-            text_parts = [node.label]
+            # Combine node_name and structured data text
+            text_parts = [node.node_name]
 
             if node.structured_data:
                 # Extract text field if available

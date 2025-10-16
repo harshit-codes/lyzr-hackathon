@@ -36,7 +36,7 @@ class SchemaService:
         Returns:
             A dictionary representing the created schema.
         """
-        from graph_rag.models import Schema
+        from app.graph_rag.models import Schema
         with self.db.get_session() as session:
             schema = Schema(project_id=project_id, **payload)
             session.add(schema)
@@ -61,7 +61,7 @@ class SchemaService:
         Returns:
             A dictionary representing the schema, or `None` if not found.
         """
-        from graph_rag.models import Schema
+        from app.graph_rag.models import Schema
         with self.db.get_session() as session:
             s = session.get(Schema, schema_id)
             if not s:
@@ -89,7 +89,7 @@ class SchemaService:
             A dictionary containing a list of schemas and the total
             number of schemas.
         """
-        from graph_rag.models import Schema
+        from app.graph_rag.models import Schema
         with self.db.get_session() as session:
             q = session.query(Schema).filter(Schema.project_id == project_id)
             total = q.count()
@@ -120,7 +120,7 @@ class SchemaService:
             A dictionary representing the updated schema, or `None` if the
             schema was not found.
         """
-        from graph_rag.models import Schema
+        from app.graph_rag.models import Schema
         with self.db.get_session() as session:
             s = session.get(Schema, schema_id)
             if not s:
@@ -151,7 +151,7 @@ class SchemaService:
             A dictionary containing the ID of the deprecated schema and its
             new `is_active` status, or `None` if the schema was not found.
         """
-        from graph_rag.models import Schema
+        from app.graph_rag.models import Schema
         with self.db.get_session() as session:
             s = session.get(Schema, schema_id)
             if not s:

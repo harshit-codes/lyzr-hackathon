@@ -44,7 +44,7 @@ class FileService:
         Returns:
             A dictionary representing the created file record.
         """
-        from graph_rag.models import FileRecord
+        from app.graph_rag.models import FileRecord
 
         with self.db.get_session() as session:
             file_row = FileRecord(
@@ -82,7 +82,7 @@ class FileService:
         Returns:
             A dictionary representing the file record, or `None` if not found.
         """
-        from graph_rag.models import FileRecord
+        from app.graph_rag.models import FileRecord
 
         with self.db.get_session() as session:
             file_row = session.get(FileRecord, file_id)
@@ -113,7 +113,7 @@ class FileService:
             A dictionary containing a list of file records and the total
             number of files.
         """
-        from graph_rag.models import FileRecord
+        from app.graph_rag.models import FileRecord
 
         with self.db.get_session() as session:
             q = session.query(FileRecord).filter(FileRecord.project_id == project_id)

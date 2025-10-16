@@ -12,9 +12,9 @@ Tests:
 import pytest
 from uuid import uuid4
 
-from graph_rag.models.schema import Schema, SchemaVersion
-from graph_rag.models.types import EntityType, AttributeDefinition, VectorConfig
-from graph_rag.validation import SchemaVersionValidator
+from app.graph_rag.models.schema import Schema, SchemaVersion
+from app.graph_rag.models.types import EntityType, AttributeDefinition, VectorConfig
+from app.graph_rag.validation import SchemaVersionValidator
 
 
 class TestSchemaCreation:

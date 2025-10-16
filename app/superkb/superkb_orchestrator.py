@@ -12,15 +12,16 @@ from datetime import datetime
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 
-from graph_rag.models.project import Project
-from graph_rag.models.schema import Schema
-from graph_rag.models.node import Node, NodeMetadata
-from graph_rag.models.edge import Edge
-from superscan.file_service import FileService
-from superkb.chunking_service import ChunkingService
-from superkb.entity_service import EntityExtractionService
-from superkb.embedding_service import EmbeddingService
-from superkb.sync_orchestrator import SyncOrchestrator
+from app.graph_rag.models.project import Project
+from app.graph_rag.models.schema import Schema
+from app.graph_rag.models.node import Node, NodeMetadata
+from app.graph_rag.models.edge import Edge
+from app.graph_rag.models.types import EntityType
+from app.superscan.file_service import FileService
+from app.superkb.chunking_service import ChunkingService
+from app.superkb.entity_service import EntityExtractionService
+from app.superkb.embedding_service import EmbeddingService
+from app.superkb.sync_orchestrator import SyncOrchestrator
 
 
 class SuperKBOrchestrator:
@@ -112,7 +113,7 @@ class SuperKBOrchestrator:
     def create_schema(
         self,
         schema_name: str,
-        entity_type: str,
+        entity_type: EntityType,
         project_id: UUID,
         description: Optional[str] = None
     ) -> Schema:
@@ -121,8 +122,7 @@ class SuperKBOrchestrator:
 
         Args:
             schema_name: The name of the schema.
-            entity_type: The type of entity this schema is for (e.g.,
-                'Person', 'Organization').
+            entity_type: The type of entity this schema is for (EntityType.NODE or EntityType.EDGE).
             project_id: The ID of the project this schema belongs to.
             description: A description of the schema.
 
@@ -132,7 +132,7 @@ class SuperKBOrchestrator:
         schema = Schema(
             schema_id=uuid4(),
             schema_name=schema_name,
-            schema_description=description or f"Schema for {entity_type} entities",
+            schema_description=description or f"Schema for {schema_name} entities",
             entity_type=entity_type,
             project_id=project_id,
             structured_attributes={},
@@ -177,7 +177,7 @@ class SuperKBOrchestrator:
             node = Node(
                 node_id=uuid4(),
                 node_name=entity['text'],
-                entity_type=entity['label'],
+                entity_type=EntityType.NODE.value,  # FIX: Use enum value "node" instead of label
                 schema_id=schema_id,
                 structured_data=entity.get('structured_data', {}),
                 unstructured_data=[],
@@ -193,12 +193,9 @@ class SuperKBOrchestrator:
             )
 
             self.db.add(node)
-            nodes.append(node)
-
-        self.db.commit()
-
-        for node in nodes:
+            self.db.commit()  # Individual commit to avoid Snowflake bulk insert issues
             self.db.refresh(node)
+            nodes.append(node)
 
         return nodes
 
@@ -226,25 +223,26 @@ class SuperKBOrchestrator:
         # Create edges between entities of the same type (simplified)
         for i, node1 in enumerate(nodes):
             for node2 in nodes[i+1:i+3]:  # Connect to next 2 nodes
+                edge_name = f"{node1.node_name}_co_occurs_with_{node2.node_name}"
                 edge = Edge(
                     edge_id=uuid4(),
-                    source_node_id=node1.node_id,
-                    target_node_id=node2.node_id,
-                    edge_type="CO_OCCURS_WITH",
+                    edge_name=edge_name,
+                    relationship_type="CO_OCCURS_WITH",
                     schema_id=schema_id,
+                    start_node_id=node1.node_id,
+                    end_node_id=node2.node_id,
+                    direction="DIRECTED",
                     structured_data={},
+                    unstructured_data=[],
                     project_id=project_id,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow()
                 )
 
                 self.db.add(edge)
+                self.db.commit()  # Individual commit to avoid Snowflake bulk insert issues
+                self.db.refresh(edge)
                 edges.append(edge)
-
-        self.db.commit()
-
-        for edge in edges:
-            self.db.refresh(edge)
 
         return edges
 
@@ -259,7 +257,7 @@ class SuperKBOrchestrator:
             A list of dictionaries, where each dictionary represents a
             raw entity.
         """
-        from graph_rag.models.chunk import Chunk
+        from app.graph_rag.models.chunk import Chunk
 
         # Get all chunks for file
         statement = select(Chunk).where(Chunk.file_id == file_id).order_by(Chunk.chunk_index)
@@ -378,7 +376,7 @@ class SuperKBOrchestrator:
             schema_name = label_to_schema.get(ner_label, ner_label)
             schema = self.create_schema(
                 schema_name=f"{schema_name.lower()}_schema",
-                entity_type=schema_name,
+                entity_type=EntityType.NODE,  # FIX: All NER entities are nodes
                 project_id=project_id,
                 description=f"Schema for {schema_name} entities extracted from document"
             )
@@ -391,7 +389,7 @@ class SuperKBOrchestrator:
             for ner_label, schema_name in [('PER', 'Person'), ('ORG', 'Organization'), ('LOC', 'Location')]:
                 schema = self.create_schema(
                     schema_name=f"{schema_name.lower()}_schema",
-                    entity_type=schema_name,
+                    entity_type=EntityType.NODE,  # FIX: All NER entities are nodes
                     project_id=project_id,
                     description=f"Default schema for {schema_name} entities"
                 )
@@ -422,7 +420,7 @@ class SuperKBOrchestrator:
             node = Node(
                 node_id=uuid4(),
                 node_name=raw_entity['word'],
-                entity_type=label_to_schema.get(entity_type, entity_type),
+                entity_type=EntityType.NODE.value,  # FIX: Use enum value "node" instead of schema name
                 schema_id=schema.schema_id,
                 structured_data={
                     'text': raw_entity['word'],
@@ -443,13 +441,9 @@ class SuperKBOrchestrator:
             )
 
             self.db.add(node)
-            all_nodes.append(node)
-
-        self.db.commit()
-
-        # Refresh all nodes
-        for node in all_nodes:
+            self.db.commit()  # Individual commit to avoid Snowflake bulk insert issues
             self.db.refresh(node)
+            all_nodes.append(node)
 
         stats["entities"] = len(raw_entities)
         print(f"✓ Created {len(all_nodes)} nodes from {len(raw_entities)} entities")

@@ -42,6 +42,19 @@ class DatabaseConfig:
 
     def __init__(self):
         """Initializes the database configuration from environment variables."""
+        # Force reload environment variables with absolute path
+        from pathlib import Path
+        env_path = Path(__file__).parent.parent.parent / ".env"
+        print(f"DatabaseConfig.__init__: Loading .env from {env_path}")
+        print(f"DatabaseConfig.__init__: .env exists: {env_path.exists()}")
+        if env_path.exists():
+            result = load_dotenv(env_path, override=True)
+            print(f"DatabaseConfig.__init__: load_dotenv result: {result}")
+        else:
+            # Try current directory
+            result = load_dotenv(override=True)
+            print(f"DatabaseConfig.__init__: load_dotenv (cwd) result: {result}")
+
         # Snowflake credentials
         self.account = os.getenv("SNOWFLAKE_ACCOUNT")
         self.user = os.getenv("SNOWFLAKE_USER")
@@ -50,6 +63,12 @@ class DatabaseConfig:
         self.database = os.getenv("SNOWFLAKE_DATABASE")
         self.schema = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC")
         self.role = os.getenv("SNOWFLAKE_ROLE")
+
+        print(f"DatabaseConfig.__init__: Read values:")
+        print(f"  account: {self.account}")
+        print(f"  user: {self.user}")
+        print(f"  database: {self.database}")
+        print(f"  password: {'***' if self.password else 'NOT SET'}")
 
         # Connection pool settings
         self.pool_size = int(os.getenv("DB_POOL_SIZE", "5"))
@@ -317,14 +336,17 @@ class DatabaseConnection:
             `True` if the connection is successful, `False` otherwise.
         """
         try:
+            from sqlalchemy import text
             engine = self.create_engine()
             with engine.connect() as conn:
-                result = conn.execute("SELECT 1")
+                result = conn.execute(text("SELECT 1"))
                 result.fetchone()
             print("✓ Database connection successful")
             return True
         except Exception as e:
             print(f"✗ Database connection failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def close(self) -> None:

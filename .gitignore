@@ -28,3 +28,6 @@ Desktop.ini
 .env.local
 .env.development
 .env.production
+
+# Ignore test artifacts
+tests/test_artifacts/

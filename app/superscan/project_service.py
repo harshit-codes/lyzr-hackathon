@@ -38,7 +38,7 @@ class ProjectService:
         Returns:
             A dictionary representing the created project.
         """
-        from graph_rag.models import Project  # late import to avoid cycles
+        from app.graph_rag.models import Project  # late import to avoid cycles
 
         with self.db.get_session() as session:
             project = Project(**payload)
@@ -65,7 +65,7 @@ class ProjectService:
         Returns:
             A dictionary representing the project, or `None` if not found.
         """
-        from graph_rag.models import Project
+        from app.graph_rag.models import Project
         with self.db.get_session() as session:
             obj = session.get(Project, project_id)
             if not obj:
@@ -96,7 +96,7 @@ class ProjectService:
             A dictionary containing a list of projects and the total
             number of projects.
         """
-        from graph_rag.models import Project
+        from app.graph_rag.models import Project
         with self.db.get_session() as session:
             query = session.query(Project)
             if owner_id:
@@ -123,7 +123,7 @@ class ProjectService:
             A dictionary representing the updated project, or `None` if the
             project was not found.
         """
-        from graph_rag.models import Project
+        from app.graph_rag.models import Project
         with self.db.get_session() as session:
             obj = session.get(Project, project_id)
             if not obj:

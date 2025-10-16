@@ -9,13 +9,14 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Column, Field, SQLModel
-from graph_rag.db import VariantType
+from app.graph_rag.db import VariantType
 
 
 class OntologyProposal(SQLModel, table=True):
     """Proposal for schemas based on sparse LLM scan."""
 
     __tablename__ = "ontology_proposals"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     proposal_id: UUID = Field(default_factory=uuid4, primary_key=True)

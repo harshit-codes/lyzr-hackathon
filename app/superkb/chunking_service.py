@@ -9,9 +9,9 @@ import re
 
 from sqlmodel import Session, select
 
-from graph_rag.db import get_db
-from graph_rag.models.chunk import Chunk
-from graph_rag.models.file_record import FileRecord
+from app.graph_rag.db import get_db
+from app.graph_rag.models.chunk import Chunk
+from app.graph_rag.models.file_record import FileRecord
 
 
 class ChunkingService:

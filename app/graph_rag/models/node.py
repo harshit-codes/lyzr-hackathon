@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator, model_validator
 from sqlmodel import Column, Field as SQLField, Relationship, SQLModel
-from graph_rag.db import VariantType
+from app.graph_rag.db import VariantType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -155,6 +155,7 @@ class Node(SQLModel, table=True):
     """
 
     __tablename__ = "nodes"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     node_id: UUID = SQLField(

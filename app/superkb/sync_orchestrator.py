@@ -11,9 +11,9 @@ from datetime import datetime
 from sqlmodel import Session, select, Column
 from sqlalchemy import text
 
-from graph_rag.models.node import Node
-from graph_rag.models.edge import Edge
-from superkb.neo4j_export_service import Neo4jExportService
+from app.graph_rag.models.node import Node
+from app.graph_rag.models.edge import Edge
+from app.superkb.neo4j_export_service import Neo4jExportService
 
 
 class SyncStatus:

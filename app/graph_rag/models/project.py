@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field as PydanticField, field_validator
 from sqlmodel import Column, Field, Relationship, SQLModel
-from graph_rag.db import VariantType
+from app.graph_rag.db import VariantType
 
 
 class ProjectStatus(str, Enum):
@@ -184,6 +184,7 @@ class Project(SQLModel, table=True):
     """
 
     __tablename__ = "projects"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     project_id: UUID = Field(

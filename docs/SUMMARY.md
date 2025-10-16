@@ -1,24 +1,36 @@
-# Table of contents
+# Table of Contents
 
+## Overview
+* [SuperSuite Documentation](README.md)
 * [Introduction](introduction.md)
-* [Getting Started](getting-started.md)
-    * [Prerequisites](getting-started.md#prerequisites)
-    * [Installation](getting-started.md#installation)
-    * [Configuration](getting-started.md#configuration)
-    * [Running the Demo](getting-started.md#running-the-demo)
-* [Architecture](architecture.md)
-    * [High-Level Overview](architecture.md#high-level-overview)
-    * [Data Flow](architecture.md#data-flow)
-    * [Data Models](architecture.md#data-models)
-    * [Multi-Database Strategy](architecture.md#multi-database-strategy)
-    * [Code Structure](architecture.md#code-structure)
+
+## Getting Started
+* [Installation](getting-started/installation.md)
+* [Configuration](getting-started/configuration.md)
+* [Quick Start](getting-started/quick-start.md)
+
+## User Guide
+* [Overview](user-guide/overview.md)
+* [Creating Projects](user-guide/creating-projects.md)
+* [Uploading Documents](user-guide/uploading-documents.md)
+* [Processing Documents](user-guide/processing-documents.md)
+* [Viewing Ontology](user-guide/viewing-ontology.md)
+* [Exploring Knowledge](user-guide/exploring-knowledge.md)
+* [Querying with Chat](user-guide/querying-chat.md)
+
+## Technical Documentation
+* [Architecture](technical-documentation/architecture.md)
+* [Database Schema](technical-documentation/database-schema.md)
+* [API Integrations](technical-documentation/api-integrations.md)
+* [Deployment](technical-documentation/deployment.md)
+
+## Reference
+* [Environment Variables](reference/environment-variables.md)
+* [Troubleshooting](reference/troubleshooting.md)
+* [FAQ](reference/faq.md)
+
+## Additional Resources
 * [Core Components](core-components.md)
-    * [SuperScan: Schema Creation](core-components.md#superscan-schema-creation)
-    * [SuperKB: Knowledge Base Construction](core-components.md#superkb-knowledge-base-construction)
-    * [SuperChat: Conversational AI](core-components.md#superchat-conversational-ai)
 * [Contributing](contributing.md)
-    * [Code Style](contributing.md#code-style)
-    * [Testing](contributing.md#testing)
-    * [Submitting Pull Requests](contributing.md#submitting-pull-requests)
 * [API Reference](api-reference.md)
 * [Archive](archive/README.md)

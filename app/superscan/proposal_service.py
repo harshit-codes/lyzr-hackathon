@@ -42,7 +42,7 @@ class ProposalService:
         Returns:
             A dictionary representing the created proposal.
         """
-        from graph_rag.models import OntologyProposal
+        from app.graph_rag.models import OntologyProposal
 
         with self.db.get_session() as session:
             proposal = OntologyProposal(
@@ -77,7 +77,7 @@ class ProposalService:
         Returns:
             A dictionary representing the proposal, or `None` if not found.
         """
-        from graph_rag.models import OntologyProposal
+        from app.graph_rag.models import OntologyProposal
 
         with self.db.get_session() as session:
             p = session.get(OntologyProposal, proposal_id)
@@ -107,7 +107,7 @@ class ProposalService:
             A dictionary containing a list of proposals and the total
             number of proposals.
         """
-        from graph_rag.models import OntologyProposal
+        from app.graph_rag.models import OntologyProposal
 
         with self.db.get_session() as session:
             q = session.query(OntologyProposal).filter(OntologyProposal.project_id == project_id)
@@ -143,7 +143,7 @@ class ProposalService:
             A dictionary representing the updated proposal, or `None` if the
             proposal was not found.
         """
-        from graph_rag.models import OntologyProposal
+        from app.graph_rag.models import OntologyProposal
         from datetime import datetime
 
         with self.db.get_session() as session:
@@ -188,7 +188,7 @@ class ProposalService:
             A dictionary representing the refined proposal, or `None` if the
             proposal was not found.
         """
-        from graph_rag.models import OntologyProposal
+        from app.graph_rag.models import OntologyProposal
         from datetime import datetime
 
         with self.db.get_session() as session:
@@ -228,8 +228,8 @@ class ProposalService:
         Raises:
             ValueError: If the proposal is not found.
         """
-        from graph_rag.models import OntologyProposal, Schema
-        from graph_rag.models.types import EntityType
+        from app.graph_rag.models import OntologyProposal, Schema
+        from app.graph_rag.models.types import EntityType
         from datetime import datetime
 
         with self.db.get_session() as session:

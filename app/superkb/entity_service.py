@@ -10,8 +10,8 @@ from uuid import UUID
 from sqlmodel import Session, select
 from transformers import pipeline
 
-from graph_rag.models.chunk import Chunk
-from graph_rag.models.node import Node
+from app.graph_rag.models.chunk import Chunk
+from app.graph_rag.models.node import Node
 
 
 class EntityExtractionService:

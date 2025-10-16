@@ -10,8 +10,8 @@ from uuid import UUID
 from neo4j import GraphDatabase, exceptions
 from sqlmodel import Session, select
 
-from graph_rag.models.node import Node
-from graph_rag.models.edge import Edge
+from app.graph_rag.models.node import Node
+from app.graph_rag.models.edge import Edge
 
 
 class Neo4jExportService:
@@ -287,7 +287,7 @@ class Neo4jExportService:
         """
         Converts a Snowflake edge to a Neo4j Cypher relationship.
 
-        This method dynamically uses the `edge_type` for the relationship type.
+        This method dynamically uses the `relationship_type` for the relationship type.
 
         Args:
             edge: The edge from Snowflake.
@@ -295,8 +295,8 @@ class Neo4jExportService:
         Returns:
             A tuple containing the Cypher query string and the parameters.
         """
-        # Normalize relationship type from edge_type
-        rel_type = self._normalize_relationship_type(edge.edge_type)
+        # Normalize relationship type from relationship_type
+        rel_type = self._normalize_relationship_type(edge.relationship_type)
 
         # Build properties from structured_data
         props = {"id": str(edge.edge_id)}
@@ -317,8 +317,8 @@ class Neo4jExportService:
         """
 
         params = {
-            "source_id": str(edge.source_node_id),
-            "target_id": str(edge.target_node_id),
+            "source_id": str(edge.start_node_id),
+            "target_id": str(edge.end_node_id),
             "props": props
         }
 

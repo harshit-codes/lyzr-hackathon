@@ -14,8 +14,8 @@ import pytest
 from uuid import uuid4
 from datetime import datetime
 
-from graph_rag.models.schema import Schema, SchemaVersion
-from graph_rag.models.types import (
+from app.graph_rag.models.schema import Schema, SchemaVersion
+from app.graph_rag.models.types import (
     EntityType,
     AttributeDefinition,
     AttributeDataType,

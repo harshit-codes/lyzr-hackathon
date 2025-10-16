@@ -16,10 +16,10 @@ import pytest
 from uuid import uuid4
 from datetime import datetime
 
-from graph_rag.models.schema import Schema
-from graph_rag.models.node import Node, UnstructuredBlob, ChunkMetadata, NodeMetadata
-from graph_rag.models.edge import Edge, EdgeDirection, EdgeMetadata
-from graph_rag.models.types import (
+from app.graph_rag.models.schema import Schema
+from app.graph_rag.models.node import Node, UnstructuredBlob, ChunkMetadata, NodeMetadata
+from app.graph_rag.models.edge import Edge, EdgeDirection, EdgeMetadata
+from app.graph_rag.models.types import (
     EntityType,
     AttributeDefinition,
     AttributeDataType,

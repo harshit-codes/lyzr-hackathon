@@ -9,8 +9,8 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
-from graph_rag.models.schema import Schema
-from graph_rag.models.types import EntityType, AttributeDefinition, VectorConfig, UnstructuredDataConfig
+from app.graph_rag.models.schema import Schema
+from app.graph_rag.models.types import EntityType, AttributeDefinition, VectorConfig, UnstructuredDataConfig
 
 
 class TestSchemaModelUnit:

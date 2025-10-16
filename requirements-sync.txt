@@ -1,0 +1,13 @@
+# Neo4j to Snowflake Sync Job Requirements
+# Install with: pip install -r requirements-sync.txt
+
+# Core dependencies
+pyspark>=3.3.0
+python-dotenv>=1.0.0
+
+# Optional: For local development and testing
+pytest>=7.0.0
+pytest-mock>=3.10.0
+
+# Note: Neo4j and Snowflake connectors are loaded dynamically via Spark
+# No need to install them via pip - they come as JAR files
