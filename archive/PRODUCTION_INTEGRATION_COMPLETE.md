@@ -132,8 +132,8 @@ NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=***
 
 # AI/LLM Configuration
-DEEPSEEK_API_KEY=sk-dc70e70f5d204874af46db9a5129ee8c
-HUGGINGFACE_API_KEY=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
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 
 # Optional: Testing Mode
 USE_LOCAL_DB=false  # Set to 'true' to use SQLite instead of Snowflake

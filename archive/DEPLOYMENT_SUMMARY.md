@@ -193,8 +193,8 @@ NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=***
 
 # AI APIs
-DEEPSEEK_API_KEY=sk-dc70e70f5d204874af46db9a5129ee8c
-HUGGINGFACE_API_KEY=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
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 ```
 
 ### Security Measures
@@ -271,11 +271,11 @@ CREATE STREAMLIT SUPERSUITE
 # 3. Configure environment variables in Snowflake
 ALTER STREAMLIT SUPERSUITE SET
   ENVIRONMENT_VARIABLES = (
-    'NEO4J_URI' = 'neo4j+s://b70333ab.databases.neo4j.io',
+    'NEO4J_URI' = 'your_neo4j_uri_here',
     'NEO4J_USERNAME' = 'neo4j',
-    'NEO4J_PASSWORD' = '***',
-    'DEEPSEEK_API_KEY' = 'sk-dc70e70f5d204874af46db9a5129ee8c',
-    'HUGGINGFACE_API_KEY' = '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'
+    'NEO4J_PASSWORD' = 'your_password_here',
+    'DEEPSEEK_API_KEY' = 'your_deepseek_api_key_here',
+    'HUGGINGFACE_API_KEY' = 'your_huggingface_api_key_here'
   );
 ```
 
