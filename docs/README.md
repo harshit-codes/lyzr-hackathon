@@ -8,6 +8,9 @@ Welcome to the **SuperSuite** documentation! SuperSuite is an intelligent docume
 
 ## 🚀 Quick Navigation
 
+### 📖 Essential Reading
+- **[📘 Complete Technical Explainer](../explainer.md)** - **START HERE!** Comprehensive guide covering conceptual foundations AND technical implementation details
+
 ### For New Users
 - **[Quick Start Guide](getting-started/quick-start.md)** - Get up and running in 5 minutes
 - **[Installation](getting-started/installation.md)** - System requirements and setup
@@ -20,6 +23,7 @@ Welcome to the **SuperSuite** documentation! SuperSuite is an intelligent docume
 - **[Querying with Chat](user-guide/querying-chat.md)** - Ask questions about your documents
 
 ### For Developers
+- **[📘 Complete Technical Explainer](../explainer.md)** - **Comprehensive technical deep dive** with architecture, data models, and workflows
 - **[Architecture](technical-documentation/architecture.md)** - System design and components
 - **[Database Schema](technical-documentation/database-schema.md)** - Snowflake and Neo4j schemas
 - **[API Integrations](technical-documentation/api-integrations.md)** - DeepSeek and HuggingFace
@@ -107,15 +111,22 @@ Quick reference for configuration and troubleshooting.
 ## 🎓 Learning Paths
 
 ### Path 1: End User (Non-Technical)
-1. **[Quick Start](getting-started/quick-start.md)** - Set up the application
-2. **[User Guide](user-guide/overview.md)** - Learn all features with screenshots
-3. **[FAQ](reference/faq.md)** - Common questions
+1. **[📘 Technical Explainer - Part I](../explainer.md#1-the-evolution-of-organizing-information)** - Understand the concepts (non-technical)
+2. **[Quick Start](getting-started/quick-start.md)** - Set up the application
+3. **[User Guide](user-guide/overview.md)** - Learn all features with screenshots
+4. **[FAQ](reference/faq.md)** - Common questions
 
 ### Path 2: Developer
-1. **[Architecture](technical-documentation/architecture.md)** - Understand the system
-2. **[Database Schema](technical-documentation/database-schema.md)** - Data models
-3. **[API Integrations](technical-documentation/api-integrations.md)** - External services
-4. **[Deployment](technical-documentation/deployment.md)** - Production setup
+1. **[📘 Complete Technical Explainer](../explainer.md)** - **MUST READ** - Comprehensive technical guide covering:
+   - Data entity structure & schema design
+   - Class architecture & relationships
+   - Key functions & methods (with code examples)
+   - Database connections & integrations
+   - Technical workflow diagrams
+2. **[Architecture](technical-documentation/architecture.md)** - System design and components
+3. **[Database Schema](technical-documentation/database-schema.md)** - Data models
+4. **[API Integrations](technical-documentation/api-integrations.md)** - External services
+5. **[Deployment](technical-documentation/deployment.md)** - Production setup
 
 ### Path 3: System Administrator
 1. **[Installation](getting-started/installation.md)** - System requirements
