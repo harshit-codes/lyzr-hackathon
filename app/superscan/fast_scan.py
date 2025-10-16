@@ -104,9 +104,123 @@ Instructions:
             # Fallback to an empty proposal if parsing fails
             return {"nodes": [], "edges": [], "summary": "parse_error"}
 
+    def _try_huggingface_fallback(self, snippets: List[str], hints: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """
+        Fallback to HuggingFace Inference API when DeepSeek fails.
+
+        Args:
+            snippets: A list of text snippets from the document.
+            hints: A dictionary of hints to guide the LLM.
+
+        Returns:
+            A dictionary containing the ontology proposal from HuggingFace.
+        """
+        import os
+        hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+
+        if not hf_token:
+            print("⚠️ No HuggingFace token found, using default schema")
+            return self._get_default_schema()
+
+        try:
+            import requests
+            print("🔄 Trying HuggingFace Inference API fallback...")
+
+            # Use Mistral-7B-Instruct for schema generation
+            api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+            headers = {"Authorization": f"Bearer {hf_token}"}
+
+            prompt = self.build_prompt(snippets, hints)
+            payload = {
+                "inputs": prompt,
+                "parameters": {
+                    "max_new_tokens": 1500,
+                    "temperature": 0.1,
+                    "return_full_text": False
+                }
+            }
+
+            response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                result = response.json()
+                if isinstance(result, list) and len(result) > 0:
+                    text = result[0].get("generated_text", "")
+                    proposal = self.parse_response(text)
+
+                    # If parsing succeeded and we got schemas
+                    if proposal.get("nodes") or proposal.get("edges"):
+                        proposal["summary"] = "Ontology proposal from HuggingFace Mistral-7B"
+                        print(f"✅ HuggingFace generated {len(proposal.get('nodes', []))} node schemas")
+                        return proposal
+
+            print(f"⚠️ HuggingFace API returned status {response.status_code}")
+
+        except Exception as e:
+            print(f"⚠️ HuggingFace fallback failed: {e}")
+
+        # If HuggingFace also fails, return default schema
+        return self._get_default_schema()
+
+    def _get_default_schema(self) -> Dict[str, Any]:
+        """
+        Returns a default schema proposal when all LLM attempts fail.
+
+        Returns:
+            A dictionary containing a basic default schema.
+        """
+        print("📋 Using default schema (Person, Organization, Location)")
+        return {
+            "nodes": [
+                {
+                    "schema_name": "Person",
+                    "entity_type": "NODE",
+                    "structured_attributes": [
+                        {"name": "name", "data_type": "string", "required": True},
+                        {"name": "title", "data_type": "string", "required": False},
+                        {"name": "email", "data_type": "string", "required": False},
+                    ],
+                    "notes": "Default Person schema",
+                },
+                {
+                    "schema_name": "Organization",
+                    "entity_type": "NODE",
+                    "structured_attributes": [
+                        {"name": "name", "data_type": "string", "required": True},
+                        {"name": "industry", "data_type": "string", "required": False},
+                    ],
+                    "notes": "Default Organization schema",
+                },
+                {
+                    "schema_name": "Location",
+                    "entity_type": "NODE",
+                    "structured_attributes": [
+                        {"name": "name", "data_type": "string", "required": True},
+                        {"name": "country", "data_type": "string", "required": False},
+                    ],
+                    "notes": "Default Location schema",
+                }
+            ],
+            "edges": [
+                {
+                    "schema_name": "WORKS_AT",
+                    "entity_type": "EDGE",
+                    "structured_attributes": [
+                        {"name": "start_date", "data_type": "string", "required": False},
+                        {"name": "position", "data_type": "string", "required": False},
+                    ],
+                    "notes": "Person works at Organization",
+                }
+            ],
+            "summary": "Default schema proposal (LLM unavailable)",
+        }
+
     def generate_proposal(self, snippets: List[str], hints: Dict[str, Any] | None = None) -> Dict[str, Any]:
         """
         Generates an ontology proposal from text snippets using an LLM.
+
+        Tries DeepSeek first, falls back to HuggingFace if DeepSeek fails,
+        and uses a default schema if both fail.
 
         Args:
             snippets: A list of text snippets from the document.
@@ -117,24 +231,12 @@ Instructions:
             'nodes', 'edges', and 'summary'.
         """
         if not self.client:
-            # Mock response if no OpenAI client
-            return {
-                "nodes": [
-                    {
-                        "schema_name": "Document",
-                        "entity_type": "NODE",
-                        "structured_attributes": [
-                            {"name": "title", "data_type": "string", "required": True},
-                            {"name": "author", "data_type": "string", "required": False},
-                        ],
-                        "notes": "Mock proposal (no OpenAI key)",
-                    }
-                ],
-                "edges": [],
-                "summary": "Mock proposal generated without OpenAI",
-            }
+            print("⚠️ No DeepSeek client configured, trying HuggingFace...")
+            return self._try_huggingface_fallback(snippets, hints)
 
+        # Try DeepSeek first
         try:
+            print(f"🤖 Trying DeepSeek API ({self.model})...")
             prompt = self.build_prompt(snippets, hints)
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -147,12 +249,17 @@ Instructions:
             )
             text = response.choices[0].message.content
             proposal = self.parse_response(text)
-            proposal.setdefault("summary", f"Ontology proposal from {self.model}")
-            return proposal
+
+            # Check if DeepSeek returned valid schemas
+            if proposal.get("nodes") or proposal.get("edges"):
+                proposal.setdefault("summary", f"Ontology proposal from {self.model}")
+                print(f"✅ DeepSeek generated {len(proposal.get('nodes', []))} node schemas")
+                return proposal
+            else:
+                print("⚠️ DeepSeek returned empty proposal, trying HuggingFace...")
+                return self._try_huggingface_fallback(snippets, hints)
+
         except Exception as e:
-            # Return error proposal
-            return {
-                "nodes": [],
-                "edges": [],
-                "summary": f"LLM error: {str(e)}",
-            }
+            print(f"⚠️ DeepSeek API failed: {e}")
+            print("🔄 Falling back to HuggingFace...")
+            return self._try_huggingface_fallback(snippets, hints)

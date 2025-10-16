@@ -24,6 +24,104 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Import SuperSuite components
 from end_to_end_orchestrator import EndToEndOrchestrator
 
+# Demo orchestrator for Snowflake environment
+class DemoOrchestrator:
+    """Demo orchestrator that simulates SuperSuite functionality without database connections."""
+    
+    def __init__(self):
+        self.current_project = None
+        self.processed_files = []
+    
+    def initialize_services(self):
+        """Mock initialization for demo mode."""
+        pass
+    
+    def create_project(self, project_name: str, description: str = None):
+        """Create a mock project."""
+        self.current_project = {
+            "project_name": project_name,
+            "description": description,
+            "kb_project": type('MockProject', (), {'project_id': 'demo-project-id'})(),
+            "created_at": "2025-10-16T01:00:00Z"
+        }
+        return self.current_project
+    
+    def process_document(self, file_path: str, project_id: str = None):
+        """Mock document processing."""
+        import time
+        import os
+        filename = os.path.basename(file_path)
+        
+        # Simulate processing time
+        time.sleep(2)
+        
+        return {
+            "file_path": file_path,
+            "project_id": project_id or "demo-project-id",
+            "scan_results": {
+                "file_id": "demo-file-id",
+                "text_length": 1500,
+                "schemas_created": 3,
+                "schema_proposal": {
+                    "nodes": [
+                        {"schema_name": "Person", "structured_attributes": ["name", "role"]},
+                        {"schema_name": "Organization", "structured_attributes": ["name", "industry"]},
+                        {"schema_name": "Concept", "structured_attributes": ["name", "description"]}
+                    ]
+                }
+            },
+            "kb_results": {
+                "chunks": 12,
+                "entities": 8,
+                "edges": 15,
+                "neo4j_synced": False
+            },
+            "success": True
+        }
+    
+    def initialize_chat_agent(self):
+        """Mock chat initialization."""
+        pass
+    
+    def query_knowledge_base(self, query: str):
+        """Mock knowledge base query."""
+        import time
+        time.sleep(1)  # Simulate processing time
+        
+        # Generate mock responses based on query
+        if "what is" in query.lower():
+            response = "SuperSuite is an AI-powered document intelligence platform that integrates document processing, knowledge extraction, and conversational AI."
+        elif "component" in query.lower():
+            response = "SuperSuite consists of three main components: SuperScan (document processing), SuperKB (knowledge base creation), and SuperChat (conversational AI)."
+        elif "author" in query.lower() or "who" in query.lower():
+            response = "The document was created by the AI Research Team at Tech Innovation Labs."
+        else:
+            response = f"Based on the processed documents, I can tell you that {query} relates to the core functionality of the SuperSuite platform."
+        
+        return {
+            "query": query,
+            "response": response,
+            "intent": "information_request",
+            "citations": 2,
+            "reasoning_steps": 3,
+            "execution_time": 1.2,
+            "success": True
+        }
+    
+    def get_processing_summary(self):
+        """Mock processing summary."""
+        if not self.processed_files:
+            return {"total_files": 0, "message": "No documents processed yet"}
+        
+        return {
+            "total_files": len(self.processed_files),
+            "total_chunks": sum(f.get("kb_results", {}).get("chunks", 0) for f in self.processed_files),
+            "total_entities": sum(f.get("kb_results", {}).get("entities", 0) for f in self.processed_files),
+            "total_schemas": sum(f.get("scan_results", {}).get("schemas_created", 0) for f in self.processed_files),
+            "neo4j_synced": False,
+            "files": self.processed_files
+        }
+
 # Page configuration
 st.set_page_config(
     page_title="SuperSuite - AI Document Intelligence",
@@ -50,9 +148,18 @@ def initialize_orchestrator():
     """Initialize the SuperSuite orchestrator if not already done."""
     if st.session_state.orchestrator is None:
         try:
-            # Use local database for demo purposes
-            st.session_state.orchestrator = EndToEndOrchestrator(use_local_db=True)
-            st.session_state.orchestrator.initialize_services()
+            # Check if we're running in Snowflake environment
+            import os
+            is_snowflake_env = os.getenv('SNOWFLAKE_ACCOUNT') is not None
+            
+            if is_snowflake_env:
+                # In Snowflake environment, use demo mode without database connections
+                st.session_state.orchestrator = DemoOrchestrator()
+                st.info("🔧 Running in demo mode - using simulated SuperSuite functionality")
+            else:
+                # Local development - use real orchestrator
+                st.session_state.orchestrator = EndToEndOrchestrator(use_local_db=True)
+                st.session_state.orchestrator.initialize_services()
             return True
         except Exception as e:
             st.error(f"❌ Failed to initialize SuperSuite: {e}")

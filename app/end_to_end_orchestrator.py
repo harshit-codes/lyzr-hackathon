@@ -26,31 +26,34 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-# Add current directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
 from sqlmodel import Session, SQLModel
 from sqlalchemy import create_engine
 
 # Import components
-from superscan.fast_scan import FastScan
-from superscan.file_service import FileService
-from superscan.pdf_parser import PDFParser
-from superscan.project_service import ProjectService
-from superscan.schema_service import SchemaService
+from app.superscan.fast_scan import FastScan
+from app.superscan.file_service import FileService
+from app.superscan.pdf_parser import PDFParser
+from app.superscan.project_service import ProjectService
+from app.superscan.schema_service import SchemaService
 
-from superkb.superkb_orchestrator import SuperKBOrchestrator
+from app.superkb.superkb_orchestrator import SuperKBOrchestrator
 
-from superchat.agent_orchestrator import AgentOrchestrator
-from superchat.intent_classifier import IntentClassifier
-from superchat.context_manager import ContextManager
-from superchat.tools.relational_tool import RelationalTool
-from superchat.tools.graph_tool import GraphTool
-from superchat.tools.vector_tool import VectorTool
+from app.superchat.agent_orchestrator import AgentOrchestrator
+from app.superchat.intent_classifier import IntentClassifier
+from app.superchat.context_manager import ContextManager
+from app.superchat.tools.relational_tool import RelationalTool
+from app.superchat.tools.graph_tool import GraphTool
+from app.superchat.tools.vector_tool import VectorTool
+
+# Import synced graph tool
+from app.superchat.tools.synced_graph_tool import SyncedGraphTool
 
 # Database and Neo4j imports
-from graph_rag.db import get_db, init_database
+from app.graph_rag.db import get_db, init_database
 import neo4j
 
 
@@ -82,7 +85,7 @@ class EndToEndOrchestrator:
         natural language questions to the SuperChat agent.
     """
 
-    def __init__(self, use_local_db: bool = False):
+    def __init__(self, use_local_db: bool = False, use_synced_graph: bool = False):
         """
         Initializes the end-to-end orchestrator.
 
@@ -90,8 +93,11 @@ class EndToEndOrchestrator:
             use_local_db: If `True`, a local SQLite database will be used
                 instead of Snowflake. This is useful for local development
                 and testing.
+            use_synced_graph: If `True`, use graph data synced from Neo4j to Snowflake
+                instead of direct Neo4j connections. Useful for Snowflake Streamlit.
         """
         self.use_local_db = use_local_db
+        self.use_synced_graph = use_synced_graph
         self.db_session = None
         self.neo4j_driver = None
         self.file_svc = None
@@ -124,9 +130,22 @@ class EndToEndOrchestrator:
             self._init_local_database()
         else:
             # Initialize Snowflake database
-            print("Initializing database...")
-            init_database()
-            self.db_session = get_db()
+            print("Initializing Snowflake database connection...")
+            print(f"  Account: {os.getenv('SNOWFLAKE_ACCOUNT')}")
+            print(f"  User: {os.getenv('SNOWFLAKE_USER')}")
+            print(f"  Database: {os.getenv('SNOWFLAKE_DATABASE')}")
+            print(f"  Warehouse: {os.getenv('SNOWFLAKE_WAREHOUSE')}")
+
+            try:
+                init_database()
+                self.db_session = get_db()
+                print("✓ Snowflake database initialized successfully")
+
+            except Exception as e:
+                print(f"❌ Failed to initialize Snowflake: {e}")
+                import traceback
+                traceback.print_exc()
+                raise RuntimeError(f"Snowflake initialization failed: {e}")
 
         print("✓ Database initialized")
 
@@ -148,20 +167,32 @@ class EndToEndOrchestrator:
             self.neo4j_driver = None
 
         # Initialize SuperScan components
-        if self.use_local_db:
-            with self.db_session.get_session() as session:
-                self.file_svc = FileService(session)
-                self.project_svc = ProjectService(session)
-                self.schema_svc = SchemaService(session)
-        else:
-            with self.db_session.get_session() as session:
-                self.file_svc = FileService(session)
-                self.project_svc = ProjectService(session)
-                self.schema_svc = SchemaService(session)
+        # These services expect a DatabaseConnection object, not a Session
+        self.file_svc = FileService(self.db_session)
+        self.project_svc = ProjectService(self.db_session)
+        self.schema_svc = SchemaService(self.db_session)
 
         # Initialize FastScan for schema proposals
-        openai_key = os.getenv("OPENAI_API_KEY")
-        self.fast_scan = FastScan(api_key=openai_key)
+        deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+        deepseek_base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+        if deepseek_key:
+            self.fast_scan = FastScan(
+                api_key=deepseek_key,
+                base_url=deepseek_base_url,
+                model=deepseek_model
+            )
+            print("✓ FastScan initialized with DeepSeek")
+        else:
+            # Fallback to OpenAI if available
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openai_key:
+                self.fast_scan = FastScan(api_key=openai_key)
+                print("✓ FastScan initialized with OpenAI (fallback)")
+            else:
+                self.fast_scan = FastScan()  # Mock mode
+                print("⚠ FastScan initialized in mock mode (no API keys)")
 
         print("✓ All services initialized")
         print()
@@ -175,13 +206,13 @@ class EndToEndOrchestrator:
         engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
         # Import all models
-        from graph_rag.models.project import Project
-        from graph_rag.models.schema import Schema
-        from graph_rag.models.node import Node
-        from graph_rag.models.edge import Edge
-        from graph_rag.models.file_record import FileRecord
-        from graph_rag.models.ontology_proposal import OntologyProposal
-        from graph_rag.models.chunk import Chunk
+        from app.graph_rag.models.project import Project
+        from app.graph_rag.models.schema import Schema
+        from app.graph_rag.models.node import Node
+        from app.graph_rag.models.edge import Edge
+        from app.graph_rag.models.file_record import FileRecord
+        from app.graph_rag.models.ontology_proposal import OntologyProposal
+        from app.graph_rag.models.chunk import Chunk
 
         # Create all tables
         SQLModel.metadata.create_all(engine)
@@ -234,14 +265,26 @@ class EndToEndOrchestrator:
                 description=description or f"SuperSuite project: {project_name}"
             )
 
+            # Extract data from kb_project BEFORE session closes to avoid DetachedInstanceError
+            kb_project_dict = {
+                "project_id": str(kb_project.project_id),
+                "project_name": kb_project.project_name,
+                "description": kb_project.description,
+                "status": kb_project.status,
+                "owner_id": kb_project.owner_id,
+                "created_at": kb_project.created_at
+            }
+
             self.current_project = {
                 "scan_project": scan_project,
-                "kb_project": kb_project,
+                "kb_project": kb_project_dict,  # Use dict instead of ORM object
                 "project_name": project_name,
                 "created_at": datetime.utcnow()
             }
+            print(f"  DEBUG: self.current_project set to: {self.current_project}")
 
         print(f"✓ Created project: {project_name}")
+        print(f"  DEBUG: About to return self.current_project: {self.current_project}")
         return self.current_project
 
     def process_document(self, file_path: str, project_id: str = None) -> Dict:
@@ -297,11 +340,17 @@ class EndToEndOrchestrator:
             print("-" * 40)
 
             with self.db_session.get_session() as session:
-                # Upload file
-                file_record = self.file_svc.upload_file(
-                    project_id=project_id,
-                    file_path=file_path,
-                    filename=Path(file_path).name
+                # Upload file - use upload_pdf with correct parameters
+                from uuid import UUID
+                import os
+
+                file_size = os.path.getsize(file_path)
+                file_record = self.file_svc.upload_pdf(
+                    project_id=UUID(project_id),
+                    filename=Path(file_path).name,
+                    size_bytes=file_size,
+                    pages=None,  # Will be determined during parsing
+                    metadata={"source": "end_to_end_orchestrator"}
                 )
 
                 # Parse document
@@ -341,8 +390,8 @@ class EndToEndOrchestrator:
 
                 kb_orchestrator = SuperKBOrchestrator(session, enable_neo4j_sync=bool(self.neo4j_driver))
                 kb_stats = kb_orchestrator.process_document(
-                    file_id=file_record["file_id"],
-                    project_id=project_id,
+                    file_id=UUID(file_record["file_id"]),
+                    project_id=UUID(project_id),
                     chunk_size=512,
                     chunk_overlap=50
                 )
@@ -362,19 +411,204 @@ class EndToEndOrchestrator:
         print("=" * 80)
         return results
 
+    def generate_schemas_only(self, file_path: str, project_id: str = None) -> Dict:
+        """
+        Stage 1: Generate schemas from document without extracting entities.
+
+        This method only runs the SuperScan pipeline to generate schemas.
+        The user can review these schemas before proceeding to Stage 2.
+
+        Args:
+            file_path: The path to the document file.
+            project_id: The ID of the project to process the document into.
+
+        Returns:
+            A dictionary containing the scan results with generated schemas.
+        """
+        print("=" * 80)
+        print("Stage 1: Schema Generation Only")
+        print("=" * 80)
+        print(f"Analyzing: {file_path}")
+        print()
+
+        if not self.current_project and not project_id:
+            raise ValueError("No current project set. Create a project first or provide project_id.")
+
+        project_id = project_id or self.current_project["kb_project"].project_id
+
+        results = {
+            "file_path": file_path,
+            "project_id": str(project_id),
+            "scan_results": {},
+            "success": False
+        }
+
+        try:
+            print("SuperScan Processing")
+            print("-" * 40)
+
+            with self.db_session.get_session() as session:
+                # Upload file
+                from uuid import UUID
+                import os
+
+                file_size = os.path.getsize(file_path)
+                print(f"📄 Uploading file: {Path(file_path).name} ({file_size} bytes)")
+                file_record = self.file_svc.upload_pdf(
+                    project_id=UUID(project_id),
+                    filename=Path(file_path).name,
+                    size_bytes=file_size,
+                    pages=None,
+                    metadata={"source": "schema_generation_stage"}
+                )
+                print(f"✓ File uploaded: {file_record['file_id']}")
+
+                # Parse document
+                print("📖 Parsing PDF...")
+                parser = PDFParser()
+                text_content = parser.extract_text(file_path)
+                print(f"✓ Extracted {len(text_content)} characters")
+
+                # Generate schema proposal
+                print("🤖 Generating schema proposal with AI...")
+                snippets = text_content.split('\n\n')[:5]
+                print(f"   Using {len(snippets)} text snippets")
+                schema_proposal = self.fast_scan.generate_proposal(
+                    snippets=snippets,
+                    hints={"domain": "general", "filename": Path(file_path).name}
+                )
+                print(f"✓ Proposal generated: {len(schema_proposal.get('nodes', []))} node schemas, {len(schema_proposal.get('edges', []))} edge schemas")
+                print(f"   Summary: {schema_proposal.get('summary', 'N/A')}")
+
+                # Create schemas from proposal
+                print("💾 Creating schemas in database...")
+                created_schemas = []
+                from app.graph_rag.models.types import EntityType
+
+                for node_schema in schema_proposal.get("nodes", []):
+                    print(f"   Creating schema: {node_schema['schema_name']}")
+                    # Fix: create_schema expects (project_id, payload) not keyword args
+                    payload = {
+                        "schema_name": node_schema["schema_name"],
+                        "entity_type": EntityType.NODE,
+                        "version": "1.0.0",
+                        "description": node_schema.get("notes", ""),
+                        "structured_attributes": node_schema.get("structured_attributes", []),
+                        "is_active": True
+                    }
+                    schema = self.schema_svc.create_schema(
+                        project_id=UUID(project_id),
+                        payload=payload
+                    )
+                    created_schemas.append(schema)
+                    print(f"   ✓ Created: {schema['schema_name']} (ID: {schema['schema_id']})")
+
+                results["scan_results"] = {
+                    "file_id": str(file_record["file_id"]),
+                    "text_length": len(text_content),
+                    "schemas_created": len(created_schemas),
+                    "schema_proposal": schema_proposal,
+                    "created_schema_ids": [s["schema_id"] for s in created_schemas]
+                }
+
+                print(f"✓ Generated {len(created_schemas)} schemas")
+                results["success"] = True
+
+        except Exception as e:
+            print(f"❌ Schema generation failed: {e}")
+            import traceback
+            print(traceback.format_exc())
+            results["error"] = str(e)
+
+        print("=" * 80)
+        return results
+
+    def process_kb_only(self, file_id: str, project_id: str = None) -> Dict:
+        """
+        Stage 2: Process knowledge base using approved schemas.
+
+        This method runs the SuperKB pipeline to extract entities, create nodes/edges,
+        generate embeddings, and sync to Neo4j using the previously generated schemas.
+
+        Args:
+            file_id: The ID of the file to process (from Stage 1).
+            project_id: The ID of the project.
+
+        Returns:
+            A dictionary containing the KB processing results.
+        """
+        print("=" * 80)
+        print("Stage 2: Knowledge Base Processing")
+        print("=" * 80)
+        print(f"Processing file: {file_id}")
+        print()
+
+        if not self.current_project and not project_id:
+            raise ValueError("No current project set.")
+
+        project_id = project_id or self.current_project["kb_project"].project_id
+
+        results = {
+            "file_id": file_id,
+            "project_id": str(project_id),
+            "kb_results": {},
+            "success": False
+        }
+
+        try:
+            print("SuperKB Processing")
+            print("-" * 40)
+
+            with self.db_session.get_session() as session:
+                from uuid import UUID
+
+                kb_orchestrator = SuperKBOrchestrator(session, enable_neo4j_sync=bool(self.neo4j_driver))
+                kb_stats = kb_orchestrator.process_document(
+                    file_id=UUID(file_id),
+                    project_id=UUID(project_id),
+                    chunk_size=512,
+                    chunk_overlap=50
+                )
+
+                results["kb_results"] = kb_stats
+                print(f"✓ SuperKB complete: {kb_stats.get('chunks', 0)} chunks, {kb_stats.get('entities', 0)} entities")
+                results["success"] = True
+
+        except Exception as e:
+            print(f"❌ KB processing failed: {e}")
+            results["error"] = str(e)
+
+        print("=" * 80)
+        return results
+
     def initialize_chat_agent(self):
         """
         Initializes the SuperChat agent with the processed knowledge base.
         """
         print("Initializing SuperChat Agent...")
 
-        if not self.db_session or not self.neo4j_driver:
-            raise ValueError("Database and Neo4j connections required for SuperChat")
+        if not self.db_session:
+            raise ValueError("Database connection required for SuperChat")
 
         with self.db_session.get_session() as session:
             # Initialize tools
             relational_tool = RelationalTool(session)
-            graph_tool = GraphTool(self.neo4j_driver)
+
+            if self.use_synced_graph:
+                # Use synced graph data from Snowflake instead of direct Neo4j
+                # Get Graph API URL from environment
+                graph_api_url = os.getenv("GRAPH_API_URL", "http://localhost:8000")
+                graph_tool = SyncedGraphTool(session=session, api_url=graph_api_url)
+                print("✓ Using synced graph data from Snowflake via Graph API")
+            elif self.neo4j_driver:
+                # Use direct Neo4j connection
+                graph_tool = GraphTool(self.neo4j_driver)
+                print("✓ Using direct Neo4j connection")
+            else:
+                # No graph connectivity - limited functionality
+                print("⚠ No graph connectivity available")
+                graph_tool = None
+
             vector_tool = VectorTool(session)
 
             # Create embedding service mock (would need actual implementation)
@@ -383,14 +617,15 @@ class EndToEndOrchestrator:
             # Initialize agent orchestrator
             self.chat_orchestrator = AgentOrchestrator(
                 db_session=session,
-                neo4j_driver=self.neo4j_driver,
+                neo4j_driver=self.neo4j_driver if not self.use_synced_graph else None,
                 embedding_service=embedding_service,
                 max_reasoning_steps=5
             )
 
             # Register tools
             self.chat_orchestrator.register_tool(relational_tool)
-            self.chat_orchestrator.register_tool(graph_tool)
+            if graph_tool:
+                self.chat_orchestrator.register_tool(graph_tool)
             self.chat_orchestrator.register_tool(vector_tool)
 
         print("✓ SuperChat agent initialized")
